@@ -27,7 +27,7 @@ interface UserConfigType {
 
 // 配置选项
 const UserConfig = reactive<UserConfigType>({
-	api_url: 'https://fc.qixz.cn/',
+	api_url: 'https://fc.69b94fb6.er.aliyun-esa.net/',
 	page_size: 20,
 })
 

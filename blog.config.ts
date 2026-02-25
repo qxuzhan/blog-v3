@@ -89,6 +89,8 @@ const blogConfig = {
 		{ 'src': 'https://um.qixz.cn/script.js', 'data-website-id': '55ed3ffd-f0d7-4b3b-b8b2-e49f3507d028', 'defer': true, 'crossorigin': 'anonymous' as const },
 		// Twikoo 评论系统
 		{ src: '/assets/twikoo.min.js', defer: true, crossorigin: 'anonymous' as const },
+		// Google AdSense 广告系统
+		{ async: true, src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8968466990619569', crossorigin: 'anonymous' as const },
 	],
 
 	/** 自己部署的 Twikoo 服务 */
