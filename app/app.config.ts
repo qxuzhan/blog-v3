@@ -26,12 +26,6 @@ export default defineAppConfig({
 				'localhost',
 				'wudu.ltd',
 				'xnet.ren',
-				'github.com',
-				'qq.com',
-				'travellings.cn',
-				'jiuchan.org',
-				'blogscn.fun',
-				'blogsclub.org',
 			],
 			/** 强制跳转页面，支持字符串路径或正则表达式，这些页面会启用外链安全提示 */
 			pageWhitelist: [],

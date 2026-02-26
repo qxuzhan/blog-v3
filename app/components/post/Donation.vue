@@ -50,6 +50,10 @@ const { donation } = useAppConfig()
 			justify-content: center;
 			gap: 1.5rem;
 			padding: 0.5rem 0;
+
+			@media (max-width: $breakpoint-mobile) {
+				gap: 1rem;
+			}
 		}
 
 		.donation-item {
@@ -60,6 +64,13 @@ const { donation } = useAppConfig()
 
 			.image {
 				border-radius: 0.5rem;
+				width: 160px;
+				height: 160px;
+
+				@media (max-width: $breakpoint-mobile) {
+					width: 120px;
+					height: 120px;
+				}
 			}
 
 			.label {

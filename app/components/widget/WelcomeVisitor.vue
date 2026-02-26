@@ -15,8 +15,8 @@ interface IPLocation {
 }
 
 // 常量配置
-const CACHE_KEY = 'visitor_ip_info_cache'
-const CACHE_DURATION = 1000 * 60 * 60
+const CACHE_KEY = 'visitor_region_info_cache'
+const CACHE_DURATION = 10 * 60  * 1000
 const API_URL = 'https://uapis.cn/api/v1/network/myip'
 const REFERENCE_LNG = 120.3074357
 const REFERENCE_LAT = 31.4933074
