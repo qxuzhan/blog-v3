@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PartialServiceStatus from '~/components/partial/ServiceStatus.vue'
+
 const appConfig = useAppConfig()
 </script>
 
@@ -19,7 +21,10 @@ const appConfig = useAppConfig()
 			</menu>
 		</div>
 	</nav>
-	<p v-html="appConfig.footer.copyright" />
+	<div class="footer-bottom">
+		<p v-html="appConfig.footer.copyright" />
+		<PartialServiceStatus />
+	</div>
 </footer>
 </template>
 
@@ -59,6 +64,12 @@ const appConfig = useAppConfig()
 
 	p {
 		margin: 0.5em;
+	}
+
+	.footer-bottom {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
 	}
 }
 </style>
