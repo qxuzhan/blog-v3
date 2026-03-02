@@ -21,50 +21,13 @@ const displayUrl = computed(() => {
 	}
 })
 
-// 倒计时状态
-const countdown = ref(5)
-let countdownTimer: ReturnType<typeof setInterval> | null = null
-
-function startCountdown() {
-	countdown.value = 5
-
-	countdownTimer = setInterval(() => {
-		if (countdown.value > 0) {
-			countdown.value--
-		}
-		else {
-			clearCountdown()
-			handleConfirm()
-		}
-	}, 1000)
-}
-
-function clearCountdown() {
-	if (countdownTimer) {
-		clearInterval(countdownTimer)
-		countdownTimer = null
-	}
-}
-
 function handleConfirm() {
-	clearCountdown()
 	emit('confirm')
 }
 
 function handleCancel() {
-	clearCountdown()
 	emit('cancel')
 }
-
-// 组件挂载时开始倒计时
-onMounted(() => {
-	startCountdown()
-})
-
-// 组件卸载时清除倒计时
-onUnmounted(() => {
-	clearCountdown()
-})
 
 useEventListener('keydown', (e) => {
 	if (props.show && e.key === 'Escape') {
@@ -97,10 +60,6 @@ useEventListener('keydown', (e) => {
 			<div class="url-display">
 				<Icon name="ph:link-bold" class="url-icon" />
 				<span class="url-text">{{ displayUrl }}</span>
-			</div>
-			<div class="countdown">
-				<Icon name="ph:clock-bold" class="countdown-icon" />
-				<span class="countdown-text">将在 <span class="countdown-number">{{ countdown }}</span> 秒后自动跳转...</span>
 			</div>
 			<p class="warning">
 				注意：外部链接的内容与本站无关，请谨慎访问。
@@ -200,38 +159,6 @@ useEventListener('keydown', (e) => {
 	margin: 0;
 	font-size: 0.85rem;
 	color: var(--c-text-2);
-}
-
-.countdown {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	margin: 1rem 0;
-	padding: 0.75rem 1rem;
-	border-radius: 0.5rem;
-	background-color: var(--c-primary-soft);
-	border-left: 3px solid var(--c-primary);
-	transition: all var(--delay);
-
-	.countdown-icon {
-		flex-shrink: 0;
-		width: 1.25rem;
-		height: 1.25rem;
-		color: var(--c-primary);
-	}
-
-	.countdown-text {
-		flex: 1;
-		font-size: 0.9rem;
-		color: var(--c-text-1);
-
-		.countdown-number {
-			font-weight: 600;
-			color: var(--c-primary);
-			transition: all 0.3s ease;
-			font-size: 1rem;
-		}
-	}
 }
 
 .dialog-footer {

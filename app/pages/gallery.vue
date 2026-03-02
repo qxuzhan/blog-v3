@@ -1,42 +1,31 @@
 <script setup lang="ts">
 import type { ChronoFramePhoto } from '~/types/chronoframe'
-import { LazyPopoverLightbox } from '#components'
 
 const layoutStore = useLayoutStore()
 layoutStore.setAside([])
 
-const title = '图驿：记录美好瞬间'
-const description = '记录生活中的美好瞬间，用镜头捕捉世界的精彩。'
-useSeoMeta({ title, description })
+useSeoMeta({
+	title: '青序图驿：记录美好瞬间',
+	description: '记录生活中的美好瞬间，用镜头捕捉世界的精彩。Light traces, time stays.',
+	ogTitle: '青序图驿',
+	ogDescription: '记录生活中的美好瞬间，用镜头捕捉世界的精彩。',
+	ogType: 'website',
+})
 
 const {
 	isConfigured,
 	fetchPhotos,
 	getPhotoUrl,
 	formatDate,
+	formatFileSize,
 } = useChronoframe()
 
 const photos = ref<ChronoFramePhoto[]>([])
 const isLoading = ref(true)
 const loadError = ref(false)
-const currentPhotoIndex = ref(0)
-
-const popoverStore = usePopoverStore()
-
-const currentPhotoEl = ref<HTMLImageElement>()
-const currentPhoto = computed(() => photos.value[currentPhotoIndex.value])
-
-const { open, close } = popoverStore.use(
-	() => {
-		if (!currentPhotoEl.value || !currentPhoto.value)
-			return h('div')
-		return h(LazyPopoverLightbox, {
-			el: currentPhotoEl.value,
-			caption: currentPhoto.value.title || currentPhoto.value.description || '',
-		})
-	},
-	{ unique: true },
-)
+const selectedPhoto = ref<ChronoFramePhoto | null>(null)
+const showLightbox = ref(false)
+const lightboxImageLoaded = ref(false)
 
 async function loadPhotos() {
 	if (!isConfigured.value) {
@@ -59,26 +48,64 @@ async function loadPhotos() {
 	}
 }
 
-function openPhoto(photo: ChronoFramePhoto, event: MouseEvent) {
-	const index = photos.value.findIndex(p => p.id === photo.id)
-	if (index === -1)
+function openPhoto(photo: ChronoFramePhoto) {
+	selectedPhoto.value = photo
+	showLightbox.value = true
+	lightboxImageLoaded.value = false
+}
+
+function closeLightbox() {
+	showLightbox.value = false
+	selectedPhoto.value = null
+}
+
+function handleKeydown(e: KeyboardEvent) {
+	if (e.key === 'Escape' && showLightbox.value) {
+		closeLightbox()
+	}
+}
+
+function navigatePhoto(direction: 'prev' | 'next') {
+	if (!selectedPhoto.value)
 		return
-	currentPhotoIndex.value = index
-	currentPhotoEl.value = event.target as HTMLImageElement
-	open()
+	const currentIndex = photos.value.findIndex(p => p.id === selectedPhoto.value?.id)
+	if (currentIndex === -1)
+		return
+	const newIndex = direction === 'prev'
+		? (currentIndex - 1 + photos.value.length) % photos.value.length
+		: (currentIndex + 1) % photos.value.length
+	const newPhoto = photos.value[newIndex]
+	if (newPhoto) {
+		selectedPhoto.value = newPhoto
+		lightboxImageLoaded.value = false
+	}
 }
 
 onMounted(() => {
 	loadPhotos()
+	document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+	document.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
 <template>
 <h1 class="sr-only">
-	图驿
+	青序图驿
 </h1>
 
-<div class="gallery-container full-width">
+<section class="gallery-header">
+	<h2 class="gallery-title">
+		青序图驿
+	</h2>
+	<p class="gallery-slogan">
+		Light traces, time stays.
+	</p>
+</section>
+
+<div class="gallery-container">
 	<template v-if="!isConfigured">
 		<div class="not-configured">
 			<Icon name="ph:image-broken-bold" class="icon" />
@@ -122,7 +149,8 @@ onMounted(() => {
 				v-for="(photo, index) in photos"
 				:key="photo.id"
 				class="masonry-item"
-				:style="{ '--delay': `${index * 0.03}s` }"
+				:style="{ '--delay': `${index * 0.05}s` }"
+				@click="openPhoto(photo)"
 			>
 				<div class="image-wrapper">
 					<img
@@ -130,7 +158,6 @@ onMounted(() => {
 						:alt="photo.title || '照片'"
 						class="image-thumb"
 						loading="lazy"
-						@click="openPhoto(photo, $event)"
 						@load="(e: Event) => (e.target as HTMLElement)?.classList.add('loaded')"
 					>
 					<img
@@ -138,7 +165,6 @@ onMounted(() => {
 						:alt="photo.title || '照片'"
 						class="image-full"
 						loading="lazy"
-						@click="openPhoto(photo, $event)"
 						@load="(e: Event) => (e.target as HTMLElement)?.classList.add('loaded')"
 					>
 					<div class="gallery-overlay">
@@ -161,17 +187,115 @@ onMounted(() => {
 		</div>
 	</template>
 </div>
+
+<Teleport to="body">
+	<Transition name="lightbox">
+		<div v-if="showLightbox && selectedPhoto" class="lightbox" @click.self="closeLightbox">
+			<button class="lightbox-close" @click="closeLightbox">
+				<Icon name="ph:x-bold" />
+			</button>
+
+			<button class="lightbox-nav prev" @click="navigatePhoto('prev')">
+				<Icon name="ph:caret-left-bold" />
+			</button>
+
+			<button class="lightbox-nav next" @click="navigatePhoto('next')">
+				<Icon name="ph:caret-right-bold" />
+			</button>
+
+			<div class="lightbox-content">
+				<img
+					:src="getPhotoUrl(selectedPhoto, 'thumbnail')"
+					:alt="selectedPhoto.title || '照片'"
+					class="lightbox-image thumb"
+					:class="{ hidden: lightboxImageLoaded }"
+				>
+				<img
+					:src="getPhotoUrl(selectedPhoto, 'original')"
+					:alt="selectedPhoto.title || '照片'"
+					class="lightbox-image full"
+					:class="{ visible: lightboxImageLoaded }"
+					@load="lightboxImageLoaded = true"
+				>
+				<div v-if="!lightboxImageLoaded" class="loading-spinner">
+					<Icon name="ph:spinner-bold" class="spin" />
+				</div>
+			</div>
+
+			<div class="lightbox-info">
+				<div v-if="selectedPhoto.title" class="info-title">
+					{{ selectedPhoto.title }}
+				</div>
+				<div v-if="selectedPhoto.description" class="info-desc">
+					{{ selectedPhoto.description }}
+				</div>
+				<div class="info-meta">
+					<div v-if="selectedPhoto.dateTaken" class="meta-item">
+						<Icon name="ph:calendar-bold" />
+						<span>{{ formatDate(selectedPhoto.dateTaken) }}</span>
+					</div>
+					<div v-if="selectedPhoto.locationName" class="meta-item">
+						<Icon name="ph:map-pin-bold" />
+						<span>{{ selectedPhoto.locationName }}</span>
+					</div>
+					<div v-if="selectedPhoto.exif?.Make || selectedPhoto.exif?.Model" class="meta-item">
+						<Icon name="ph:camera-bold" />
+						<span>{{ selectedPhoto.exif?.Make }} {{ selectedPhoto.exif?.Model }}</span>
+					</div>
+					<div v-if="selectedPhoto.fileSize" class="meta-item">
+						<Icon name="ph:file-bold" />
+						<span>{{ formatFileSize(selectedPhoto.fileSize) }}</span>
+					</div>
+					<div v-if="selectedPhoto.width && selectedPhoto.height" class="meta-item">
+						<Icon name="ph:frame-corners-bold" />
+						<span>{{ selectedPhoto.width }} x {{ selectedPhoto.height }}</span>
+					</div>
+				</div>
+				<div v-if="selectedPhoto.tags?.length" class="info-tags">
+					<span v-for="tag in selectedPhoto.tags" :key="tag" class="tag">
+						{{ tag }}
+					</span>
+				</div>
+			</div>
+		</div>
+	</Transition>
+</Teleport>
 </template>
 
 <style lang="scss" scoped>
+.gallery-header {
+  margin: 2em 1em 1em;
+  text-align: center;
+}
+
+.gallery-title {
+  font-family: var(--font-stroke-free);
+  font-size: 5em;
+  font-weight: 800;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--c-text-3);
+  margin: 0 0 0.2em;
+  transition: color 0.2s;
+
+  &::selection,
+  &:hover {
+    color: var(--c-text-3);
+  }
+}
+
+.gallery-slogan {
+  font-size: 1em;
+  color: var(--c-text-2);
+  opacity: 0.7;
+  margin: 0;
+  font-style: italic;
+  letter-spacing: 0.05em;
+}
+
 .gallery-container {
   animation: float-in .2s backwards;
   margin: 1rem;
-
-  &.full-width {
-    margin: 0;
-    padding: 1rem;
-  }
 }
 
 .not-configured,
@@ -262,7 +386,7 @@ onMounted(() => {
 
 .masonry-grid {
   column-count: 2;
-  column-gap: 0.75rem;
+  column-gap: 1rem;
 
   @media (min-width: 640px) {
     column-count: 3;
@@ -275,26 +399,22 @@ onMounted(() => {
   @media (min-width: 1280px) {
     column-count: 5;
   }
-
-  @media (min-width: 1536px) {
-    column-count: 6;
-  }
 }
 
 .masonry-item {
   break-inside: avoid;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
   animation: float-in 0.3s backwards;
   animation-delay: var(--delay);
   border-radius: 8px;
   overflow: hidden;
-  cursor: zoom-in;
+  cursor: pointer;
   box-shadow: 0 0 0 1px var(--c-bg-soft);
   transition: transform 0.3s, box-shadow 0.3s;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px var(--ld-shadow);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px var(--ld-shadow);
 
     .gallery-overlay {
       opacity: 1;
@@ -335,6 +455,10 @@ onMounted(() => {
   }
 }
 
+.masonry-item:hover .image-full {
+  opacity: 1;
+}
+
 .gallery-overlay {
   position: absolute;
   inset: 0;
@@ -343,8 +467,7 @@ onMounted(() => {
   transition: opacity 0.3s;
   display: flex;
   align-items: flex-end;
-  padding: 0.75rem;
-  pointer-events: none;
+  padding: 1rem;
 }
 
 .overlay-content {
@@ -354,31 +477,217 @@ onMounted(() => {
 
 .expand-icon {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  font-size: 1.25rem;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.5rem;
   opacity: 0.8;
 }
 
 .photo-title {
   font-weight: 600;
-  font-size: 0.9rem;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.25rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .photo-date {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   opacity: 0.8;
 }
 
 .gallery-footer {
   color: var(--c-text-3);
   font-size: 1rem;
-  margin: 1.5rem 0;
+  margin: 2rem 0;
   text-align: center;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--c-bg);
+  backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 3rem;
+  height: 3rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--c-bg-soft);
+  color: var(--c-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 1001;
+
+  &:hover {
+    background: var(--c-bg-2);
+  }
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3rem;
+  height: 3rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--c-bg-soft);
+  color: var(--c-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  z-index: 1001;
+
+  &:hover {
+    background: var(--c-bg-2);
+  }
+
+  &.prev {
+    left: 1rem;
+  }
+
+  &.next {
+    right: 1rem;
+  }
+}
+
+.lightbox-content {
+  max-width: 90vw;
+  max-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 4px;
+  transition: opacity 0.3s;
+
+  &.thumb {
+    filter: blur(20px);
+    transform: scale(1.02);
+
+    &.hidden {
+      opacity: 0;
+    }
+  }
+
+  &.full {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+
+    &.visible {
+      opacity: 1;
+    }
+  }
+}
+
+.loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  color: var(--c-text);
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lightbox-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, var(--c-bg), transparent);
+  padding: 2rem 1rem 1rem;
+  color: var(--c-text);
+}
+
+.info-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.info-desc {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+}
+
+.info-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.info-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.tag {
+  padding: 0.2rem 0.6rem;
+  background: var(--c-bg-soft);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.lightbox-enter-active,
+.lightbox-leave-active {
+  transition: opacity 0.3s;
+}
+
+.lightbox-enter-from,
+.lightbox-leave-to {
+  opacity: 0;
 }
 
 @keyframes float-in {

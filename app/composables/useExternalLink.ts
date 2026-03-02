@@ -106,12 +106,19 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 			return
 		}
 
-		// 重定向到跳转页面（使用查询参数）
-		const encodedUrl = encodeUrl(url)
-		const goUrl = `/go?url=${encodedUrl}`
-
-		// 在新标签页打开跳转页面
-		window.open(goUrl, target || '_blank', 'noopener,noreferrer')
+		const ExternalLinkDialogComp = await getExternalLinkDialog()
+		const { open, close } = popoverStore.use(() =>
+			h(ExternalLinkDialogComp, {
+				show: true,
+				url,
+				onConfirm: () => {
+					window.open(url, target || '_blank', 'noopener,noreferrer')
+					close()
+				},
+				onCancel: () => close(),
+			}),
+		)
+		open()
 	}
 
 	function setupGlobalInterceptor() {

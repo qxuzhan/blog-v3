@@ -59,8 +59,9 @@ function jumpToExternal() {
 		return
 	}
 
-	// 在新窗口中打开外部链接
-	window.open(url.value, '_blank', 'noopener,noreferrer')
+	// 生成唯一的窗口名称，避免多个中间页同时跳转时窗口重用
+	const windowName = `external_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+	window.open(url.value, windowName, 'noopener,noreferrer')
 
 	// 清除倒计时定时器
 	if (countdownTimer) {
