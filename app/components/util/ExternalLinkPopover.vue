@@ -47,6 +47,12 @@ useEventListener('keydown', (e) => {
 watch(() => route.path, () => {
 	externalLinkStore.close()
 })
+
+useEventListener('scroll', () => {
+	if (state.value.show) {
+		externalLinkStore.close()
+	}
+}, { passive: true })
 </script>
 
 <template>
@@ -81,7 +87,7 @@ watch(() => route.path, () => {
 	box-shadow: 0 0.25em 0.75em var(--ld-shadow), 0 0 0 1px var(--c-border);
 	background-color: var(--ld-bg-card);
 	font-size: 0.875rem;
-	z-index: calc(var(--z-index-popover) + 1);
+	z-index: 9998;
 	white-space: nowrap;
 }
 

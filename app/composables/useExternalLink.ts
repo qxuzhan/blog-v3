@@ -1,10 +1,6 @@
 interface ExternalLinkOptions {
 	whitelist?: string[]
 	enabled?: boolean
-	/** 页面白名单，支持指定页面路径或正则表达式 */
-	pageWhitelist?: (string | RegExp)[]
-	/** 页面黑名单，支持指定页面路径或正则表达式 */
-	pageBlacklist?: (string | RegExp)[]
 }
 
 const defaultWhitelist = [
@@ -17,8 +13,6 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 	const {
 		whitelist = appConfig.component?.externalLink?.whitelist ?? defaultWhitelist,
 		enabled = appConfig.component?.externalLink?.enabled ?? true,
-		pageWhitelist = appConfig.component?.externalLink?.pageWhitelist ?? [],
-		pageBlacklist = appConfig.component?.externalLink?.pageBlacklist ?? [],
 	} = options
 
 	const externalLinkStore = useExternalLinkStore()
@@ -44,44 +38,37 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 		}
 	}
 
-	function isCurrentPageAllowed(): boolean {
-		const router = useRouter()
-		const currentPath = router.currentRoute.value.path
-
-		const isInBlacklist = pageBlacklist.some((pattern) => {
-			if (typeof pattern === 'string') {
-				return currentPath === pattern
-			}
-			return pattern.test(currentPath)
-		})
-
-		if (isInBlacklist) {
+	function isNoFollowLink(link: HTMLAnchorElement): boolean {
+		const feedCard = link.closest('.feed-card')
+		if (!feedCard)
 			return false
-		}
 
-		if (pageWhitelist.length === 0) {
-			return true
-		}
+		const feedGroup = feedCard.closest('.feed-group')
+		if (!feedGroup)
+			return false
 
-		return pageWhitelist.some((pattern) => {
-			if (typeof pattern === 'string') {
-				return currentPath === pattern
-			}
-			return pattern.test(currentPath)
-		})
+		const groupTitle = feedGroup.querySelector('.feed-title')
+		if (!groupTitle)
+			return false
+
+		const titleText = groupTitle.textContent || ''
+		return titleText !== '『失联友友』'
 	}
 
-	function shouldShowDialog(url: string): boolean {
-		return enabled && isCurrentPageAllowed() && isExternalLink(url) && !isInWhitelist(url)
+	function shouldShowDialog(url: string, link: HTMLAnchorElement): boolean {
+		if (!enabled)
+			return false
+		if (!isExternalLink(url))
+			return false
+		if (isInWhitelist(url))
+			return false
+		if (isNoFollowLink(link))
+			return false
+		return true
 	}
 
-	function handleExternalLink(url: string, target?: string, linkRect?: DOMRect) {
-		if (!shouldShowDialog(url)) {
-			window.open(url, target || '_blank', 'noopener,noreferrer')
-			return
-		}
-
-		externalLinkStore.open(url, linkRect!, target)
+	function handleExternalLink(url: string, target: string | undefined, linkRect: DOMRect) {
+		externalLinkStore.open(url, linkRect, target)
 	}
 
 	function setupGlobalInterceptor() {
@@ -108,7 +95,7 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 			if (href.startsWith('javascript:'))
 				return
 
-			if (shouldShowDialog(href)) {
+			if (shouldShowDialog(href, link)) {
 				e.preventDefault()
 				const targetAttr = link.getAttribute('target') as string | undefined
 				const linkRect = link.getBoundingClientRect()

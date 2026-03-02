@@ -20,11 +20,19 @@ const {
 } = useChronoframe()
 
 const photos = ref<ChronoFramePhoto[]>([])
-const loadedImages = ref<Set<string>>(new Set())
 const isLoading = ref(true)
 const loadError = ref(false)
 const selectedPhoto = ref<ChronoFramePhoto | null>(null)
 const showLightbox = ref(false)
+const lightboxImageLoaded = ref(false)
+const showBoundaryTip = ref('')
+let boundaryTipTimer: ReturnType<typeof setTimeout> | null = null
+
+const currentIndex = computed(() => {
+	if (!selectedPhoto.value)
+		return -1
+	return photos.value.findIndex(p => p.id === selectedPhoto.value?.id)
+})
 
 async function loadPhotos() {
 	if (!isConfigured.value) {
@@ -47,58 +55,73 @@ async function loadPhotos() {
 	}
 }
 
-function onImageLoaded(photoId: string) {
-	loadedImages.value.add(photoId)
-}
-
-function isImageLoaded(photoId: string) {
-	return loadedImages.value.has(photoId)
-}
-
 function openPhoto(photo: ChronoFramePhoto) {
 	selectedPhoto.value = photo
 	showLightbox.value = true
+	lightboxImageLoaded.value = false
 }
 
 function closeLightbox() {
 	showLightbox.value = false
 	selectedPhoto.value = null
+	lightboxImageLoaded.value = false
 }
 
-function handleKeydown(e: KeyboardEvent) {
-	if (e.key === 'Escape' && showLightbox.value) {
-		closeLightbox()
+function showTip(tip: string) {
+	showBoundaryTip.value = tip
+	if (boundaryTipTimer) {
+		clearTimeout(boundaryTipTimer)
 	}
+	boundaryTipTimer = setTimeout(() => {
+		showBoundaryTip.value = ''
+	}, 1500)
 }
 
 function navigatePhoto(direction: 'prev' | 'next') {
-	if (!selectedPhoto.value)
+	if (!selectedPhoto.value || photos.value.length === 0)
 		return
-	const currentIndex = photos.value.findIndex(p => p.id === selectedPhoto.value?.id)
-	if (currentIndex === -1)
+
+	const index = currentIndex.value
+	if (index === -1)
 		return
-	const newIndex = direction === 'prev'
-		? (currentIndex - 1 + photos.value.length) % photos.value.length
-		: (currentIndex + 1) % photos.value.length
+
+	let newIndex: number
+
+	if (direction === 'prev') {
+		if (index === 0) {
+			showTip('已经是第一张了')
+			return
+		}
+		newIndex = index - 1
+	}
+	else {
+		if (index === photos.value.length - 1) {
+			showTip('已经是最后一张了')
+			return
+		}
+		newIndex = index + 1
+	}
+
 	const newPhoto = photos.value[newIndex]
 	if (newPhoto) {
 		selectedPhoto.value = newPhoto
+		lightboxImageLoaded.value = false
 	}
 }
 
-function getMapEmbedUrl(photo: ChronoFramePhoto) {
-	if (!photo.latitude || !photo.longitude)
-		return null
-	const lat = photo.latitude
-	const lon = photo.longitude
-	const delta = 0.005
-	return `https://www.openstreetmap.org/export/embed.html?bbox=${lon - delta}%2C${lat - delta}%2C${lon + delta}%2C${lat + delta}&layer=mapnik&marker=${lat}%2C${lon}`
-}
+function handleKeydown(e: KeyboardEvent) {
+	if (!showLightbox.value)
+		return
 
-function getMapUrl(photo: ChronoFramePhoto) {
-	if (!photo.latitude || !photo.longitude)
-		return null
-	return `https://www.openstreetmap.org/?mlat=${photo.latitude}&mlon=${photo.longitude}#map=15/${photo.latitude}/${photo.longitude}`
+	if (e.key === 'Escape') {
+		closeLightbox()
+	}
+	else if (e.key === 'ArrowLeft') {
+		navigatePhoto('prev')
+	}
+	else if (e.key === 'ArrowRight') {
+		navigatePhoto('next')
+	}
 }
 
 onMounted(() => {
@@ -108,6 +131,9 @@ onMounted(() => {
 
 onUnmounted(() => {
 	document.removeEventListener('keydown', handleKeydown)
+	if (boundaryTipTimer) {
+		clearTimeout(boundaryTipTimer)
+	}
 })
 </script>
 
@@ -175,14 +201,6 @@ onUnmounted(() => {
 							:alt="photo.title || '照片'"
 							class="image-thumb"
 							loading="lazy"
-							@load="(e: Event) => { (e.target as HTMLElement)?.classList.add('loaded'); onImageLoaded(photo.id); }"
-						>
-						<img
-							:src="getPhotoUrl(photo, 'original')"
-							:alt="photo.title || '照片'"
-							class="image-full"
-							loading="lazy"
-							@load="(e: Event) => { (e.target as HTMLElement)?.classList.add('loaded'); onImageLoaded(photo.id); }"
 						>
 						<div class="gallery-overlay">
 							<div class="overlay-content">
@@ -221,119 +239,74 @@ onUnmounted(() => {
 				<Icon name="ph:caret-right-bold" />
 			</button>
 
-			<div class="lightbox-body">
+			<Transition name="tip">
+				<div v-if="showBoundaryTip" class="boundary-tip">
+					{{ showBoundaryTip }}
+				</div>
+			</Transition>
+
+			<div class="lightbox-content">
 				<div class="lightbox-image-container">
 					<img
-						:src="isImageLoaded(selectedPhoto.id) ? getPhotoUrl(selectedPhoto, 'original') : getPhotoUrl(selectedPhoto, 'thumbnail')"
+						:src="getPhotoUrl(selectedPhoto, 'thumbnail')"
 						:alt="selectedPhoto.title || '照片'"
-						class="lightbox-image"
-						:class="{ 'is-thumb': !isImageLoaded(selectedPhoto.id) }"
+						class="lightbox-image thumb"
+						:class="{ hidden: lightboxImageLoaded }"
 					>
+					<img
+						v-show="lightboxImageLoaded"
+						:src="getPhotoUrl(selectedPhoto, 'original')"
+						:alt="selectedPhoto.title || '照片'"
+						class="lightbox-image full"
+						:class="{ visible: lightboxImageLoaded }"
+						@load="lightboxImageLoaded = true"
+					>
+					<div v-if="!lightboxImageLoaded" class="loading-spinner">
+						<Icon name="ph:spinner-bold" class="spin" />
+					</div>
 				</div>
 
-				<div class="lightbox-sidebar">
-					<div class="sidebar-content">
+				<div class="lightbox-info">
+					<div class="info-header">
 						<div v-if="selectedPhoto.title" class="info-title">
 							{{ selectedPhoto.title }}
 						</div>
 						<div v-if="selectedPhoto.description" class="info-desc">
 							{{ selectedPhoto.description }}
 						</div>
+					</div>
 
-						<div class="info-section">
-							<h4 class="section-title">
-								<Icon name="ph:info-bold" />
-								基本信息
-							</h4>
-							<div class="info-list">
-								<div v-if="selectedPhoto.dateTaken" class="info-item">
-									<span class="label">拍摄时间</span>
-									<span class="value">{{ formatDate(selectedPhoto.dateTaken) }}</span>
-								</div>
-								<div v-if="selectedPhoto.locationName" class="info-item">
-									<span class="label">拍摄地点</span>
-									<span class="value">{{ selectedPhoto.locationName }}</span>
-								</div>
-								<div v-if="selectedPhoto.fileSize" class="info-item">
-									<span class="label">文件大小</span>
-									<span class="value">{{ formatFileSize(selectedPhoto.fileSize) }}</span>
-								</div>
-								<div v-if="selectedPhoto.width && selectedPhoto.height" class="info-item">
-									<span class="label">图片尺寸</span>
-									<span class="value">{{ selectedPhoto.width }} x {{ selectedPhoto.height }}</span>
-								</div>
-							</div>
+					<div class="info-meta">
+						<div v-if="selectedPhoto.dateTaken" class="meta-item">
+							<Icon name="ph:calendar-bold" />
+							<span>{{ formatDate(selectedPhoto.dateTaken) }}</span>
 						</div>
+						<div v-if="selectedPhoto.locationName" class="meta-item">
+							<Icon name="ph:map-pin-bold" />
+							<span>{{ selectedPhoto.locationName }}</span>
+						</div>
+						<div v-if="selectedPhoto.exif?.Make || selectedPhoto.exif?.Model" class="meta-item">
+							<Icon name="ph:camera-bold" />
+							<span>{{ selectedPhoto.exif?.Make }} {{ selectedPhoto.exif?.Model }}</span>
+						</div>
+						<div v-if="selectedPhoto.fileSize" class="meta-item">
+							<Icon name="ph:file-bold" />
+							<span>{{ formatFileSize(selectedPhoto.fileSize) }}</span>
+						</div>
+						<div v-if="selectedPhoto.width && selectedPhoto.height" class="meta-item">
+							<Icon name="ph:frame-corners-bold" />
+							<span>{{ selectedPhoto.width }} x {{ selectedPhoto.height }}</span>
+						</div>
+					</div>
 
-						<div v-if="selectedPhoto.exif?.Make || selectedPhoto.exif?.Model" class="info-section">
-							<h4 class="section-title">
-								<Icon name="ph:camera-bold" />
-								相机信息
-							</h4>
-							<div class="info-list">
-								<div v-if="selectedPhoto.exif?.Make" class="info-item">
-									<span class="label">品牌</span>
-									<span class="value">{{ selectedPhoto.exif.Make }}</span>
-								</div>
-								<div v-if="selectedPhoto.exif?.Model" class="info-item">
-									<span class="label">型号</span>
-									<span class="value">{{ selectedPhoto.exif.Model }}</span>
-								</div>
-								<div v-if="selectedPhoto.exif?.FocalLength" class="info-item">
-									<span class="label">焦距</span>
-									<span class="value">{{ selectedPhoto.exif.FocalLength }}</span>
-								</div>
-								<div v-if="selectedPhoto.exif?.FNumber" class="info-item">
-									<span class="label">光圈</span>
-									<span class="value">f/{{ selectedPhoto.exif.FNumber }}</span>
-								</div>
-								<div v-if="selectedPhoto.exif?.ExposureTime" class="info-item">
-									<span class="label">快门</span>
-									<span class="value">{{ selectedPhoto.exif.ExposureTime }}s</span>
-								</div>
-								<div v-if="selectedPhoto.exif?.ISO" class="info-item">
-									<span class="label">ISO</span>
-									<span class="value">{{ selectedPhoto.exif.ISO }}</span>
-								</div>
-							</div>
-						</div>
+					<div v-if="selectedPhoto.tags?.length" class="info-tags">
+						<span v-for="tag in selectedPhoto.tags" :key="tag" class="tag">
+							{{ tag }}
+						</span>
+					</div>
 
-						<div v-if="selectedPhoto.latitude && selectedPhoto.longitude" class="info-section">
-							<h4 class="section-title">
-								<Icon name="ph:map-pin-bold" />
-								拍摄位置
-							</h4>
-							<div class="map-container">
-								<iframe
-									:src="getMapEmbedUrl(selectedPhoto)!"
-									class="map-iframe"
-									loading="lazy"
-									frameborder="0"
-									scrolling="no"
-								/>
-								<a
-									:href="getMapUrl(selectedPhoto)!"
-									target="_blank"
-									rel="noopener"
-									class="map-link"
-								>
-									<Icon name="ph:arrows-out-bold" />
-									全屏查看
-								</a>
-							</div>
-						</div>
-
-						<div v-if="selectedPhoto.tags?.length" class="info-section">
-							<h4 class="section-title">
-								<Icon name="ph:tag-bold" />
-								标签
-							</h4>
-							<div class="info-tags">
-								<span v-for="tag in selectedPhoto.tags" :key="tag" class="tag">
-									{{ tag }}
-								</span>
-							</div>
-						</div>
+					<div class="info-counter">
+						{{ currentIndex + 1 }} / {{ photos.length }}
 					</div>
 				</div>
 			</div>
@@ -516,35 +489,10 @@ onUnmounted(() => {
   line-height: 0;
 }
 
-.image-thumb,
-.image-full {
+.image-thumb {
   width: 100%;
   height: auto;
   display: block;
-  transition: opacity 0.5s ease, filter 0.5s ease;
-}
-
-.image-thumb {
-  filter: blur(10px);
-
-  &.loaded {
-    filter: blur(0);
-  }
-}
-
-.image-full {
-  position: absolute;
-  top: 0;
-  left: 0;
-  opacity: 0;
-
-  &.loaded {
-    opacity: 1;
-  }
-}
-
-.masonry-item:hover .image-full {
-  opacity: 1;
 }
 
 .gallery-overlay {
@@ -658,173 +606,144 @@ onUnmounted(() => {
   }
 }
 
-.lightbox-body {
+.boundary-tip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0.75rem 1.5rem;
+  background: rgb(0 0 0 / 70%);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  z-index: 1002;
+  pointer-events: none;
+}
+
+.tip-enter-active,
+.tip-leave-active {
+  transition: opacity 0.3s;
+}
+
+.tip-enter-from,
+.tip-leave-to {
+  opacity: 0;
+}
+
+.lightbox-content {
   display: flex;
+  gap: 1.5rem;
   max-width: 95vw;
   max-height: 90vh;
-  background: var(--c-bg-1);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 30%);
-
-  @media (max-width: 1023px) {
-    flex-direction: column;
-    max-width: 90vw;
-  }
+  align-items: center;
 }
 
 .lightbox-image-container {
-  flex: 1;
-  min-width: 0;
+  position: relative;
+  flex-shrink: 0;
+  max-width: 65vw;
+  max-height: 85vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--c-bg-2);
-  min-height: 300px;
-
-  @media (min-width: 1024px) {
-    max-width: 65%;
-  }
 }
 
 .lightbox-image {
   max-width: 100%;
-  max-height: 80vh;
+  max-height: 85vh;
   object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 30%);
+  transition: opacity 0.4s ease;
 
-  &.is-thumb {
-    filter: blur(5px);
+  &.thumb {
+    &.hidden {
+      opacity: 0;
+    }
   }
 
-  @media (max-width: 1023px) {
-    max-height: 50vh;
+  &.full {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+
+    &.visible {
+      opacity: 1;
+    }
   }
 }
 
-.lightbox-sidebar {
-  width: 320px;
-  max-height: 90vh;
+.loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  color: white;
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lightbox-info {
+  width: 280px;
+  max-height: 85vh;
   overflow-y: auto;
-  background: var(--c-bg-1);
-  border-left: 1px solid var(--c-bg-soft);
-
-  @media (max-width: 1023px) {
-    width: 100%;
-    max-height: 40vh;
-    border-left: none;
-    border-top: 1px solid var(--c-bg-soft);
-  }
+  padding: 1.5rem;
+  background: rgb(0 0 0 / 40%);
+  border-radius: 12px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.sidebar-content {
-  padding: 1.5rem;
+.info-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 .info-title {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: var(--c-text-1);
+  line-height: 1.4;
 }
 
 .info-desc {
   font-size: 0.9rem;
-  color: var(--c-text-2);
-  margin-bottom: 1.5rem;
+  opacity: 0.8;
   line-height: 1.6;
 }
 
-.info-section {
-  margin-bottom: 1.5rem;
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--c-text-2);
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.info-list {
+.info-meta {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 0.75rem;
   font-size: 0.85rem;
-
-  .label {
-    color: var(--c-text-3);
-  }
-
-  .value {
-    color: var(--c-text-1);
-    font-weight: 500;
-  }
 }
 
-.map-container {
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--c-bg-2);
-}
-
-.location-card {
+.meta-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--c-bg-2);
-}
-
-.location-icon {
-  font-size: 1.5rem;
-  color: var(--c-primary);
-}
-
-.location-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.location-name {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--c-text-1);
-  margin-bottom: 0.25rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.location-coords {
-  font-size: 0.75rem;
-  color: var(--c-text-3);
-  font-family: monospace;
-}
-
-.map-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem;
-  font-size: 0.85rem;
-  color: var(--c-primary);
-  text-decoration: none;
-  transition: background 0.2s;
+  opacity: 0.9;
 
-  &:hover {
-    background: var(--c-bg-soft);
+  .icon {
+    font-size: 1rem;
+    opacity: 0.7;
   }
 }
 
@@ -832,14 +751,42 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
 .tag {
-  padding: 0.25rem 0.75rem;
-  background: var(--c-bg-soft);
-  border-radius: 20px;
+  padding: 0.25rem 0.6rem;
+  background: rgb(255 255 255 / 15%);
+  border-radius: 4px;
   font-size: 0.8rem;
-  color: var(--c-text-2);
+}
+
+.info-counter {
+  padding-top: 1rem;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  font-size: 0.85rem;
+  opacity: 0.7;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .lightbox-content {
+    flex-direction: column;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  .lightbox-image-container {
+    max-width: 90vw;
+    max-height: 50vh;
+  }
+
+  .lightbox-info {
+    width: 100%;
+    max-width: 90vw;
+    max-height: none;
+  }
 }
 
 .lightbox-enter-active,
