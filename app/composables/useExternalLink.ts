@@ -12,16 +12,6 @@ const defaultWhitelist = [
 	'localhost',
 ]
 
-let ExternalLinkPopover: any
-
-async function getExternalLinkPopover() {
-	if (!ExternalLinkPopover) {
-		const module = await import('~/components/util/ExternalLinkPopover.vue')
-		ExternalLinkPopover = module.default || module
-	}
-	return ExternalLinkPopover
-}
-
 export function useExternalLink(options: ExternalLinkOptions = {}) {
 	const appConfig = useAppConfig()
 	const {
@@ -31,7 +21,7 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 		pageBlacklist = appConfig.component?.externalLink?.pageBlacklist ?? [],
 	} = options
 
-	const popoverStore = usePopoverStore()
+	const externalLinkStore = useExternalLinkStore()
 
 	function isExternalLink(url: string): boolean {
 		try {
@@ -85,28 +75,13 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 		return enabled && isCurrentPageAllowed() && isExternalLink(url) && !isInWhitelist(url)
 	}
 
-	async function handleExternalLink(url: string, target?: string, linkRect?: DOMRect) {
+	function handleExternalLink(url: string, target?: string, linkRect?: DOMRect) {
 		if (!shouldShowDialog(url)) {
 			window.open(url, target || '_blank', 'noopener,noreferrer')
 			return
 		}
 
-		const ExternalLinkPopoverComp = await getExternalLinkPopover()
-		const { open, close } = popoverStore.use(
-			() =>
-				h(ExternalLinkPopoverComp, {
-					show: true,
-					url,
-					linkRect,
-					onConfirm: () => {
-						window.open(url, target || '_blank', 'noopener,noreferrer')
-						close()
-					},
-					onCancel: () => close(),
-				}),
-			{ single: true },
-		)
-		open()
+		externalLinkStore.open(url, linkRect!, target)
 	}
 
 	function setupGlobalInterceptor() {

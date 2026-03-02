@@ -34,8 +34,11 @@ export const usePopoverStore = defineStore('popover', () => {
 			if (options?.unique ? pops.value.includes(state) : show.value)
 				return
 
-			if (options?.single) {
-				await closeAll()
+			if (options?.single && pops.value.length > 0) {
+				const existingPop = pops.value[0]!
+				existingPop.show.value = false
+				await delay(existingPop.duration)
+				pops.value.splice(0, 1)
 			}
 
 			const vnode = render()

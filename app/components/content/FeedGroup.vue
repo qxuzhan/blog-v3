@@ -6,7 +6,7 @@ const props = defineProps<FeedGroup & { shuffle?: boolean }>()
 const route = useRoute()
 const entries = ref(props.entries)
 
-const isNoFollow = computed(() => props.name === '失联友友')
+const isNoFollow = computed(() => props.name === '『失联友友』')
 
 // 友链浮现随机延迟
 function getCardDelay(feed: FeedEntry) {

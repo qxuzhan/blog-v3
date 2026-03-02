@@ -434,8 +434,8 @@ export default [
 				desc: '努力去发光，而不是被照亮',
 				link: 'https://blog.noah0932.top/',
 				feed: 'https://blog.noah0932.top/rss.xml',
-				icon: 'https://cdn.tulan.cyou/noah/2025/07/26/b_5255bd8e31082e2a4332c4eb4172686e.jpg',
-				avatar: 'https://cdn.tulan.cyou/noah/2025/07/26/b_5255bd8e31082e2a4332c4eb4172686e.jpg',
+				icon: 'https://image.lolimi.cn/2026/03/02/69a5464105bd6.png',
+				avatar: 'https://image.lolimi.cn/2026/03/02/69a5464105bd6.png',
 				archs: ['Hexo', '国内 CDN'],
 				date: '2024-12-09',
 				comment: 'NoahのBlog（blog.noah0932.top）近期活跃更新，内容多元。涵盖技术干货（Hexo问题解决、CloudFlare部署等）、邮箱/教育邮箱申请、DNS对比，也有日常感悟、明信片温情活动，实用与温情兼具。',
@@ -739,10 +739,23 @@ export default [
 				date: '2026-02-23',
 				comment: '近期高频更新技术干货，涵盖高分子材料研发、Python/AI自动化、铝合金表面处理等技术，延伸至逻辑思维解析。覆盖材料科学、金属工程等领域，文风硬核技术流，注重实践与理论结合。',
 			},
+			{
+				author: 'Wcowin',
+				sitenick: 'web',
+				title: 'Wcowin’s Web',
+				desc: '循此苦旅，以达星辰',
+				link: 'https://wcowin.work/',
+				feed: '',
+				icon: 'https://image.lolimi.cn/2026/03/02/69a5454d54f05.webp',
+				avatar: 'https://image.lolimi.cn/2026/03/02/69a5454d54f05.webp',
+				archs: ['Python', 'GitHub Pages'],
+				date: '2026-03-02',
+				comment: '近期更新MkDocs/Zenical技术文档教程，延伸AI工具评测与极简生产力实践，文风简洁务实，提供可复用的技术方案。',
+			},
 		],
 	},
 	{
-		name: '网络组织',
+		name: '『网络组织』',
 		desc: '一个人的寂寞，一群人的狂欢',
 		entries: [
 			{
@@ -796,7 +809,7 @@ export default [
 		],
 	},
 	{
-		name: '失联友友',
+		name: '『失联友友』',
 		desc: '离别是为了更好的重逢',
 		entries: [
 			{

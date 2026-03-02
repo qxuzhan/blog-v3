@@ -1,36 +1,27 @@
 <script setup lang="ts">
-const props = defineProps<{
-	show?: boolean
-	url?: string
-	linkRect?: DOMRect
-}>()
-
-const emit = defineEmits<{
-	confirm: []
-	cancel: []
-}>()
-
-const popoverRef = ref<HTMLElement>()
+const externalLinkStore = useExternalLinkStore()
+const { state } = storeToRefs(externalLinkStore)
+const route = useRoute()
 
 const displayUrl = computed(() => {
 	try {
-		const urlObj = new URL(props.url || '')
+		const urlObj = new URL(state.value.url || '')
 		return urlObj.hostname
 	}
 	catch {
-		return props.url || ''
+		return state.value.url || ''
 	}
 })
 
 const position = computed(() => {
-	if (!props.linkRect)
+	if (!state.value.linkRect)
 		return {}
 
 	const popoverWidth = 280
 	const popoverHeight = 50
 
-	let top = props.linkRect.bottom + 8
-	let left = props.linkRect.left + props.linkRect.width / 2 - popoverWidth / 2
+	let top = state.value.linkRect.bottom + 8
+	let left = state.value.linkRect.left + state.value.linkRect.width / 2 - popoverWidth / 2
 
 	if (left < 8)
 		left = 8
@@ -38,7 +29,7 @@ const position = computed(() => {
 		left = window.innerWidth - popoverWidth - 8
 
 	if (top + popoverHeight > window.innerHeight - 8)
-		top = props.linkRect.top - popoverHeight - 8
+		top = state.value.linkRect.top - popoverHeight - 8
 
 	return {
 		top: `${top}px`,
@@ -46,35 +37,31 @@ const position = computed(() => {
 	}
 })
 
-function handleConfirm() {
-	emit('confirm')
-}
-
-function handleCancel() {
-	emit('cancel')
-}
-
 useEventListener('keydown', (e) => {
-	if (props.show && e.key === 'Escape') {
+	if (state.value.show && e.key === 'Escape') {
 		e.preventDefault()
-		handleCancel()
+		externalLinkStore.close()
 	}
+})
+
+watch(() => route.path, () => {
+	externalLinkStore.close()
 })
 </script>
 
 <template>
 <Teleport to="body">
 	<Transition>
-		<div v-if="show" ref="popoverRef" class="external-popover" :style="position">
+		<div v-if="state.show" class="external-popover" :style="position">
 			<span class="popover-text">
 				<Icon name="ph:link-bold" class="link-icon" />
 				<span class="domain">{{ displayUrl }}</span>
 			</span>
 			<div class="popover-actions">
-				<button class="btn-cancel" @click="handleCancel">
+				<button class="btn-cancel" @click="externalLinkStore.close">
 					取消
 				</button>
-				<button class="btn-confirm" @click="handleConfirm">
+				<button class="btn-confirm" @click="externalLinkStore.confirm">
 					前往
 				</button>
 			</div>
@@ -85,17 +72,17 @@ useEventListener('keydown', (e) => {
 
 <style lang="scss" scoped>
 .external-popover {
+	position: fixed;
 	display: flex;
 	align-items: center;
 	gap: 0.75rem;
-	position: fixed;
 	padding: 0.5rem 0.75rem;
 	border-radius: 0.5rem;
 	box-shadow: 0 0.25em 0.75em var(--ld-shadow), 0 0 0 1px var(--c-border);
 	background-color: var(--ld-bg-card);
 	font-size: 0.875rem;
-	white-space: nowrap;
 	z-index: calc(var(--z-index-popover) + 1);
+	white-space: nowrap;
 }
 
 .popover-text {
@@ -112,10 +99,10 @@ useEventListener('keydown', (e) => {
 	}
 
 	.domain {
-		overflow: hidden;
 		max-width: 10em;
-		font-family: var(--font-monospace);
+		overflow: hidden;
 		text-overflow: ellipsis;
+		font-family: var(--font-monospace);
 	}
 }
 
@@ -128,8 +115,8 @@ useEventListener('keydown', (e) => {
 		padding: 0.25rem 0.6rem;
 		border-radius: 0.25rem;
 		font-size: 0.8rem;
-		transition: all 0.15s;
 		cursor: pointer;
+		transition: all 0.15s;
 	}
 
 	.btn-cancel {
@@ -148,8 +135,8 @@ useEventListener('keydown', (e) => {
 		color: white;
 
 		&:hover {
-			border-color: var(--c-primary-soft);
 			background-color: var(--c-primary-soft);
+			border-color: var(--c-primary-soft);
 		}
 	}
 }
