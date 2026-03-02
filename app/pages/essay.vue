@@ -200,339 +200,341 @@ function getEssayDate(date?: string | Date) {
 
 <style lang="scss" scoped>
 .talk-list {
-  animation: float-in .2s backwards;
-  margin: 1rem;
+	margin: 1rem;
+	animation: float-in 0.2s backwards;
 
-  .talk-item {
-    animation: float-in .3s backwards;
-    animation-delay: var(--delay);
-    border-radius: 8px;
-    box-shadow: 0 0 0 1px var(--c-bg-soft);
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    opacity: 1;
-    transform: translateY(0);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+	.talk-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		opacity: 1;
+		margin-bottom: 1rem;
+		padding: 1rem;
+		border-radius: 8px;
+		box-shadow: 0 0 0 1px var(--c-bg-soft);
+		transform: translateY(0);
+		transition: opacity 0.3s ease, transform 0.3s ease;
+		animation: float-in 0.3s backwards;
+		animation-delay: var(--delay);
 
-    .talk-meta {
-      align-items: center;
-      display: flex;
-      gap: 10px;
+		.talk-meta {
+			display: flex;
+			align-items: center;
+			gap: 10px;
 
-      .avatar {
-        border-radius: 2em;
-        box-shadow: 2px 4px 1rem var(--ld-shadow);
-        width: 3em;
-      }
+			.avatar {
+				width: 3em;
+				border-radius: 2em;
+				box-shadow: 2px 4px 1rem var(--ld-shadow);
+			}
 
-      .nick {
-        align-items: center;
-        display: flex;
-        gap: 5px;
-      }
+			.nick {
+				display: flex;
+				align-items: center;
+				gap: 5px;
+			}
 
-      .date {
-        color: var(--c-text-3);
-        font-family: var(--font-monospace);
-        font-size: .8rem;
-      }
+			.date {
+				font-family: var(--font-monospace);
+				font-size: 0.8rem;
+				color: var(--c-text-3);
+			}
 
-      .verified {
-        color: var(--c-primary);
-        font-size: 16px;
-      }
-    }
+			.verified {
+				font-size: 16px;
+				color: var(--c-primary);
+			}
+		}
 
-    .talk-content {
-      color: var(--c-text-2);
-      display: flex;
-      flex-direction: column;
-      gap: .5rem;
-      line-height: 1.6;
+		.talk-content {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+			line-height: 1.6;
+			color: var(--c-text-2);
 
-      :deep(a[href]) {
-        margin: -.1em -.2em;
-        padding: .1em .2em;
-        background: linear-gradient(var(--c-primary-soft), var(--c-primary-soft)) no-repeat center bottom / 100% .1em;
-        color: var(--c-primary);
-        transition: all .2s;
+			:deep(a[href]) {
+				margin: -0.1em -0.2em;
+				padding: 0.1em 0.2em;
+				background: linear-gradient(var(--c-primary-soft), var(--c-primary-soft)) no-repeat center bottom / 100% 0.1em;
+				color: var(--c-primary);
+				transition: all 0.2s;
 
-        &:hover {
-          border-radius: .3em;
-          background-size: 100% 100%;
-        }
-      }
+				&:hover {
+					border-radius: 0.3em;
+					background-size: 100% 100%;
+				}
+			}
 
-      .images {
-        display: grid;
-        gap: 8px;
-        grid-template-columns: repeat(3, 1fr);
-      }
+			.images {
+				display: grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 8px;
+			}
 
-      .image {
-        border-radius: 8px;
-        overflow: hidden;
-        padding-bottom: 100%;
-        position: relative;
+			.image {
+				position: relative;
+				overflow: hidden;
+				padding-bottom: 100%;
+				border-radius: 8px;
 
-        :deep(img) {
-          height: 100%;
-          object-fit: cover;
-          position: absolute;
-          transition: transform .3s;
-          width: 100%;
+				:deep(img) {
+					position: absolute;
+					width: 100%;
+					height: 100%;
+					transition: transform 0.3s;
+					object-fit: cover;
 
-          &:hover {
-            transform: scale(1.05);
-          }
-        }
-      }
+					&:hover {
+						transform: scale(1.05);
+					}
+				}
+			}
 
-      .video {
-        border-radius: 8px;
-        margin: 0;
-      }
-    }
+			.video {
+				margin: 0;
+				border-radius: 8px;
+			}
+		}
 
-    .talk-bottom {
-      align-items: center;
-      color: var(--c-text-3);
-      display: flex;
-      justify-content: space-between;
+		.talk-bottom {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			color: var(--c-text-3);
 
-      .tags {
-        display: flex;
-        font-size: .7rem;
-        gap: 4px;
-      }
+			.tags {
+				display: flex;
+				gap: 4px;
+				font-size: 0.7rem;
+			}
 
-      .tag, .location {
-        display: flex;
-        padding: 2px 4px;
-        border-radius: 4px;
-        background-color: var(--c-bg-2);
-        align-items: center;
-        cursor: pointer;
-        transition: all .2s;
+			.tag, .location {
+				display: flex;
+				align-items: center;
+				padding: 2px 4px;
+				border-radius: 4px;
+				background-color: var(--c-bg-2);
+				transition: all 0.2s;
+				cursor: pointer;
 
-        &:hover {
-          opacity: .8;
-        }
-      }
+				&:hover {
+					opacity: 0.8;
+				}
+			}
 
-      .tag .i-ph\:tag-bold + * {
-        margin-left: .15em;
-      }
+			.tag .i-ph\:tag-bold + * {
+				margin-left: 0.15em;
+			}
 
-      .location {
-        color: var(--c-primary);
-      }
-    }
-  }
+			.location {
+				color: var(--c-primary);
+			}
+		}
+	}
 
-  .talk-footer {
-    color: var(--c-text-3);
-    font-size: 1rem;
-    margin: 2rem 0;
-    text-align: center;
-  }
+	.talk-footer {
+		margin: 2rem 0;
+		font-size: 1rem;
+		text-align: center;
+		color: var(--c-text-3);
+	}
 
-  /* 过渡动画 */
-  .talk-fade-enter-active,
-  .talk-fade-leave-active {
-    transition: all 0.3s ease;
-  }
+	/* 过渡动画 */
+	.talk-fade-enter-active,
+	.talk-fade-leave-active {
+		transition: all 0.3s ease;
+	}
 
-  .talk-fade-enter-from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
+	.talk-fade-enter-from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
 
-  .talk-fade-leave-to {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
+	.talk-fade-leave-to {
+		opacity: 0;
+		transform: translateY(-20px);
+	}
 
-  /* 加载状态 */
-  .loading-state {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin: 1rem 0;
-  }
+	/* 加载状态 */
+	.loading-state {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		margin: 1rem 0;
+	}
 
-  .skeleton {
-    border-radius: 8px;
-    box-shadow: 0 0 0 1px var(--c-bg-soft);
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
-  }
+	.skeleton {
+		display: flex;
+		flex-direction: column;
+		gap: 0.8rem;
+		padding: 1rem;
+		border-radius: 8px;
+		box-shadow: 0 0 0 1px var(--c-bg-soft);
+	}
 
-  .skeleton-meta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+	.skeleton-meta {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
 
-  .skeleton-avatar {
-    width: 3em;
-    height: 3em;
-    border-radius: 50%;
-    background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-  }
+	.skeleton-avatar {
+		width: 3em;
+		height: 3em;
+		border-radius: 50%;
+		background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
+		background-size: 200% 100%;
+		animation: loading 1.5s infinite;
+	}
 
-  .skeleton-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-  }
+	.skeleton-info {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
 
-  .skeleton-nick {
-    width: 120px;
-    height: 18px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-  }
+	.skeleton-nick {
+		width: 120px;
+		height: 18px;
+		border-radius: 4px;
+		background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
+		background-size: 200% 100%;
+		animation: loading 1.5s infinite;
+	}
 
-  .skeleton-date {
-    width: 100px;
-    height: 14px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-  }
+	.skeleton-date {
+		width: 100px;
+		height: 14px;
+		border-radius: 4px;
+		background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
+		background-size: 200% 100%;
+		animation: loading 1.5s infinite;
+	}
 
-  .skeleton-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
+	.skeleton-content {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
 
-  .skeleton-text {
-    height: 16px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-  }
+	.skeleton-text {
+		height: 16px;
+		border-radius: 4px;
+		background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
+		background-size: 200% 100%;
+		animation: loading 1.5s infinite;
+	}
 
-  .skeleton-text:nth-child(2) {
-    width: 80%;
-  }
+	.skeleton-text:nth-child(2) {
+		width: 80%;
+	}
 
-  .skeleton-text:nth-child(3) {
-    width: 60%;
-  }
+	.skeleton-text:nth-child(3) {
+		width: 60%;
+	}
 
-  .skeleton-bottom {
-    height: 24px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-  }
+	.skeleton-bottom {
+		height: 24px;
+		border-radius: 4px;
+		background: linear-gradient(90deg, var(--c-bg-2) 25%, var(--c-bg-soft) 50%, var(--c-bg-2) 75%);
+		background-size: 200% 100%;
+		animation: loading 1.5s infinite;
+	}
 
-  /* 错误状态 */
-  .error-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    border-radius: 8px;
-    box-shadow: 0 0 0 1px var(--c-bg-soft);
-    margin: 1rem 0;
-  }
+	/* 错误状态 */
+	.error-state {
+		margin: 1rem 0;
+		padding: 3rem 1rem;
+		border-radius: 8px;
+		box-shadow: 0 0 0 1px var(--c-bg-soft);
+		text-align: center;
+	}
 
-  .error-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-  }
+	.error-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1rem;
+	}
 
-  .error-icon {
-    font-size: 3rem;
-    color: var(--c-primary);
-  }
+	.error-icon {
+		font-size: 3rem;
+		color: var(--c-primary);
+	}
 
-  .error-state h3 {
-    font-size: 1.2rem;
-    margin: 0;
-    color: var(--c-text-1);
-  }
+	.error-state h3 {
+		margin: 0;
+		font-size: 1.2rem;
+		color: var(--c-text-1);
+	}
 
-  .error-state p {
-    color: var(--c-text-3);
-    margin: 0;
-  }
+	.error-state p {
+		margin: 0;
+		color: var(--c-text-3);
+	}
 
-  .retry-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 6px;
-    background-color: var(--c-primary);
-    color: white;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
+	.retry-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border: none;
+		border-radius: 6px;
+		background-color: var(--c-primary);
+		font-size: 0.9rem;
+		color: white;
+		transition: all 0.2s;
+		cursor: pointer;
 
-    &:hover {
-      background-color: var(--c-primary-hover);
-      transform: translateY(-1px);
-    }
+		&:hover {
+			background-color: var(--c-primary-hover);
+			transform: translateY(-1px);
+		}
 
-    &:active {
-      transform: translateY(0);
-    }
-  }
+		&:active {
+			transform: translateY(0);
+		}
+	}
 
-  /* 空状态 */
-  .empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    border-radius: 8px;
-    box-shadow: 0 0 0 1px var(--c-bg-soft);
-    margin: 1rem 0;
-    color: var(--c-text-3);
-  }
+	/* 空状态 */
+	.empty-state {
+		margin: 1rem 0;
+		padding: 3rem 1rem;
+		border-radius: 8px;
+		box-shadow: 0 0 0 1px var(--c-bg-soft);
+		text-align: center;
+		color: var(--c-text-3);
+	}
 
-  .empty-icon {
-    font-size: 3rem;
-    margin-bottom: 0.5rem;
-  }
+	.empty-icon {
+		margin-bottom: 0.5rem;
+		font-size: 3rem;
+	}
 
-  /* 加载动画 */
-  @keyframes loading {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
-  }
+	/* 加载动画 */
+	@keyframes loading {
+		0% {
+			background-position: 200% 0;
+		}
 
-  /* 淡入动画 */
-  @keyframes float-in {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+		100% {
+			background-position: -200% 0;
+		}
+	}
+
+	/* 淡入动画 */
+	@keyframes float-in {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
 }
 </style>

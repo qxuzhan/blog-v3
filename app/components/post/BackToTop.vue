@@ -55,21 +55,21 @@ function scrollToTop() {
 <style lang="scss" scoped>
 .back-to-top {
 	position: fixed;
-	bottom: 2rem;
 	right: 2rem;
+	bottom: 2rem;
 	width: 3.5rem;
 	height: 3.5rem;
 	border: none;
 	border-radius: 50%;
+	box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
 	background-color: var(--c-bg-card);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	transition: all 0.3s ease;
 	cursor: pointer;
 	z-index: 9998;
-	transition: all 0.3s ease;
 
 	&:hover {
+		box-shadow: 0 8px 20px rgb(0 0 0 / 20%);
 		transform: translateY(-4px);
-		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 	}
 
 	&:active {
@@ -104,9 +104,9 @@ function scrollToTop() {
 	position: absolute;
 	top: 50%;
 	left: 50%;
-	transform: translate(-50%, -50%);
 	font-size: 1.5rem;
 	color: var(--c-primary);
+	transform: translate(-50%, -50%);
 	transition: transform 0.3s ease;
 }
 
@@ -127,8 +127,8 @@ function scrollToTop() {
 
 @media (max-width: $breakpoint-mobile) {
 	.back-to-top {
-		bottom: 1.5rem;
 		right: 1.5rem;
+		bottom: 1.5rem;
 		width: 3rem;
 		height: 3rem;
 	}

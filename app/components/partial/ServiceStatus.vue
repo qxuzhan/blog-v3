@@ -125,6 +125,7 @@ const statusText = computed(() => {
 	0%, 100% {
 		opacity: 0.4;
 	}
+
 	50% {
 		opacity: 1;
 	}
@@ -135,8 +136,8 @@ const statusText = computed(() => {
 	align-items: center;
 	gap: 0.5em;
 	margin-left: 1em;
-	text-decoration: none;
 	font-size: inherit;
+	text-decoration: none;
 	transition: color 0.2s;
 
 	.status-indicator {
@@ -149,57 +150,64 @@ const statusText = computed(() => {
 
 	.status-dot {
 		position: absolute;
+		opacity: 1;
 		top: 50%;
 		left: 50%;
-		transform: translate(-50%, -50%);
 		width: 0.6em;
 		height: 0.6em;
 		border-radius: 50%;
-		opacity: 1;
+		transform: translate(-50%, -50%);
 	}
 
 	&.is-loading {
 		.status-indicator {
-			background-color: rgba(108, 117, 125, 0.4);
+			background-color: rgb(108 117 125 / 40%);
 		}
+
 		.status-dot {
-			background-color: #6c757d;
+			background-color: #6C757D;
 		}
 	}
 
 	&.is-normal {
 		.status-indicator {
-			background-color: rgba(92, 221, 139, 0.4);
+			background-color: rgb(92 221 139 / 40%);
 		}
+
 		.status-dot {
-			background-color: #5cdd8b;
+			background-color: #5CDD8B;
 		}
+
 		&:hover {
-			color: #5cdd8b;
+			color: #5CDD8B;
 		}
 	}
 
 	&.is-partial-failed, &.is-all-failed {
 		.status-indicator {
-			background-color: rgba(220, 53, 69, 0.4);
+			background-color: rgb(220 53 69 / 40%);
 		}
+
 		.status-dot {
-			background-color: #dc3545;
+			background-color: #DC3545;
 		}
+
 		&:hover {
-			color: #dc3545;
+			color: #DC3545;
 		}
 	}
 
 	&.is-error {
 		.status-indicator {
-			background-color: rgba(255, 193, 7, 0.4);
+			background-color: rgb(255 193 7 / 40%);
 		}
+
 		.status-dot {
-			background-color: #ffc107;
+			background-color: #FFC107;
 		}
+
 		&:hover {
-			color: #ffc107;
+			color: #FFC107;
 		}
 	}
 }

@@ -81,8 +81,8 @@ if (import.meta.dev) {
 	align-items: center;
 	justify-content: center;
 	gap: 1rem;
-	padding: 4rem 2rem;
 	min-height: 50vh;
+	padding: 4rem 2rem;
 	font-size: 1.2rem;
 	color: var(--c-text-2);
 

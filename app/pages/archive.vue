@@ -108,8 +108,8 @@ function toggleYear(year: string) {
 
 .archive-title {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
+	justify-content: space-between;
 	gap: 1em;
 	position: sticky;
 	opacity: 0.5;

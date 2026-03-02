@@ -4,6 +4,7 @@ import blogConfig from '~~/blog.config'
 export function useChronoframe() {
 	const config = blogConfig.chronoframe
 	const baseUrl = config.baseUrl
+	const mapTilerKey = config.mapTilerKey
 
 	const isConfigured = computed(() => Boolean(baseUrl))
 
@@ -86,6 +87,17 @@ export function useChronoframe() {
 		return `${baseUrl}/storage/${photo.thumbnailKey}`
 	}
 
+	function getSatelliteMapUrl(latitude: number, longitude: number, zoom = 15): string {
+		if (!mapTilerKey) {
+			return ''
+		}
+		return `https://api.maptiler.com/maps/hybrid/static/${longitude},${latitude},${zoom}/400x300@2x.png?key=${mapTilerKey}`
+	}
+
+	function getOpenStreetMapUrl(latitude: number, longitude: number): string {
+		return `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=15/${latitude}/${longitude}`
+	}
+
 	function formatDate(dateStr: string | null): string {
 		if (!dateStr)
 			return ''
@@ -114,11 +126,14 @@ export function useChronoframe() {
 
 	return {
 		baseUrl,
+		mapTilerKey,
 		isConfigured,
 		fetchPhotos,
 		fetchPhoto,
 		fetchAlbums,
 		getPhotoUrl,
+		getSatelliteMapUrl,
+		getOpenStreetMapUrl,
 		formatDate,
 		formatFileSize,
 	}

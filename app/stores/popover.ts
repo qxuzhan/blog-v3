@@ -10,10 +10,20 @@ interface PopoverState {
 export interface PopoverOptions {
 	duration?: number
 	unique?: boolean
+	single?: boolean
 }
 
 export const usePopoverStore = defineStore('popover', () => {
 	const pops = ref<Raw<PopoverState>[]>([])
+
+	async function closeAll() {
+		const allPops = [...pops.value]
+		for (const pop of allPops) {
+			pop.show.value = false
+		}
+		await delay(allPops[0]?.duration ?? 200)
+		pops.value = []
+	}
 
 	function use(render: () => VNode, options?: PopoverOptions) {
 		let state: PopoverState
@@ -23,6 +33,10 @@ export const usePopoverStore = defineStore('popover', () => {
 		async function open() {
 			if (options?.unique ? pops.value.includes(state) : show.value)
 				return
+
+			if (options?.single) {
+				await closeAll()
+			}
 
 			const vnode = render()
 			state = {
@@ -55,5 +69,6 @@ export const usePopoverStore = defineStore('popover', () => {
 	return {
 		pops,
 		use,
+		closeAll,
 	}
 })

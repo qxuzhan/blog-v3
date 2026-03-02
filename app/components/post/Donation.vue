@@ -63,9 +63,9 @@ const { donation } = useAppConfig()
 			gap: 0.5rem;
 
 			.image {
-				border-radius: 0.5rem;
 				width: 160px;
 				height: 160px;
+				border-radius: 0.5rem;
 
 				@media (max-width: $breakpoint-mobile) {
 					width: 120px;

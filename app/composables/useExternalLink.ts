@@ -12,14 +12,14 @@ const defaultWhitelist = [
 	'localhost',
 ]
 
-let ExternalLinkDialog: any
+let ExternalLinkPopover: any
 
-async function getExternalLinkDialog() {
-	if (!ExternalLinkDialog) {
-		const module = await import('~/components/util/ExternalLinkDialog.vue')
-		ExternalLinkDialog = module.default || module
+async function getExternalLinkPopover() {
+	if (!ExternalLinkPopover) {
+		const module = await import('~/components/util/ExternalLinkPopover.vue')
+		ExternalLinkPopover = module.default || module
 	}
-	return ExternalLinkDialog
+	return ExternalLinkPopover
 }
 
 export function useExternalLink(options: ExternalLinkOptions = {}) {
@@ -32,8 +32,6 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 	} = options
 
 	const popoverStore = usePopoverStore()
-	const currentUrl = ref<string>()
-	const dialog: ReturnType<typeof popoverStore.use> | null = null
 
 	function isExternalLink(url: string): boolean {
 		try {
@@ -60,7 +58,6 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 		const router = useRouter()
 		const currentPath = router.currentRoute.value.path
 
-		// 检查是否在页面黑名单中
 		const isInBlacklist = pageBlacklist.some((pattern) => {
 			if (typeof pattern === 'string') {
 				return currentPath === pattern
@@ -72,7 +69,6 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 			return false
 		}
 
-		// 检查是否在页面白名单中，如果白名单为空则默认允许所有页面
 		if (pageWhitelist.length === 0) {
 			return true
 		}
@@ -89,34 +85,26 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 		return enabled && isCurrentPageAllowed() && isExternalLink(url) && !isInWhitelist(url)
 	}
 
-	function encodeUrl(url: string): string {
-		try {
-			// 使用 base64 编码 URL，确保安全传递
-			return btoa(encodeURIComponent(url))
-		}
-		catch {
-			// 如果编码失败，使用 URI 编码
-			return encodeURIComponent(url)
-		}
-	}
-
-	async function handleExternalLink(url: string, target?: string) {
+	async function handleExternalLink(url: string, target?: string, linkRect?: DOMRect) {
 		if (!shouldShowDialog(url)) {
 			window.open(url, target || '_blank', 'noopener,noreferrer')
 			return
 		}
 
-		const ExternalLinkDialogComp = await getExternalLinkDialog()
-		const { open, close } = popoverStore.use(() =>
-			h(ExternalLinkDialogComp, {
-				show: true,
-				url,
-				onConfirm: () => {
-					window.open(url, target || '_blank', 'noopener,noreferrer')
-					close()
-				},
-				onCancel: () => close(),
-			}),
+		const ExternalLinkPopoverComp = await getExternalLinkPopover()
+		const { open, close } = popoverStore.use(
+			() =>
+				h(ExternalLinkPopoverComp, {
+					show: true,
+					url,
+					linkRect,
+					onConfirm: () => {
+						window.open(url, target || '_blank', 'noopener,noreferrer')
+						close()
+					},
+					onCancel: () => close(),
+				}),
+			{ single: true },
 		)
 		open()
 	}
@@ -133,26 +121,23 @@ export function useExternalLink(options: ExternalLinkOptions = {}) {
 			if (!href)
 				return
 
-			// 跳过内部锚点链接
 			if (href.startsWith('#'))
 				return
 
-			// 跳过邮件链接
 			if (href.startsWith('mailto:'))
 				return
 
-			// 跳过电话链接
 			if (href.startsWith('tel:'))
 				return
 
-			// 跳过javascript链接
 			if (href.startsWith('javascript:'))
 				return
 
 			if (shouldShowDialog(href)) {
 				e.preventDefault()
 				const targetAttr = link.getAttribute('target') as string | undefined
-				handleExternalLink(href, targetAttr)
+				const linkRect = link.getBoundingClientRect()
+				handleExternalLink(href, targetAttr, linkRect)
 			}
 		}, { capture: true })
 	}

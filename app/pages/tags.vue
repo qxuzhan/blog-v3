@@ -136,9 +136,9 @@ function clearSelectedTag() {
 }
 
 .tag-cloud-title {
-	text-align: center;
-	font-size: 2.5rem;
 	margin-bottom: 2rem;
+	font-size: 2.5rem;
+	text-align: center;
 	color: var(--c-text);
 }
 
@@ -157,9 +157,9 @@ function clearSelectedTag() {
 	padding: 0.5rem 1rem;
 	border-radius: 2rem;
 	background-color: var(--c-bg-2);
+	line-height: 1.4;
 	color: var(--c-text);
 	cursor: pointer;
-	line-height: 1.4;
 
 	&.small {
 		font-size: 0.9rem;
@@ -179,21 +179,21 @@ function clearSelectedTag() {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: 20px;
 	height: 20px;
+	min-width: 20px;
 	padding: 0 6px;
 	border-radius: 10px;
 	background-color: var(--c-bg-3);
-	color: var(--c-text-2);
 	font-size: 0.8rem;
 	font-weight: 500;
+	color: var(--c-text-2);
 }
 
 .tag-cloud-stats {
+	margin-top: 2rem;
+	font-size: 0.9rem;
 	text-align: center;
 	color: var(--c-text-2);
-	font-size: 0.9rem;
-	margin-top: 2rem;
 }
 
 // 选中标签时的样式
@@ -210,11 +210,11 @@ function clearSelectedTag() {
 }
 
 .tag-selected-title {
-	font-size: 2.5rem;
+	margin: 0;
 	font-family: var(--font-creative);
+	font-size: 2.5rem;
 	font-weight: 550;
 	color: var(--c-text);
-	margin: 0;
 }
 
 .tag-hashtag {
@@ -231,12 +231,12 @@ function clearSelectedTag() {
 	justify-content: center;
 	width: 40px;
 	height: 40px;
+	border: none;
 	border-radius: 50%;
 	background-color: var(--c-bg-2);
 	color: var(--c-text-2);
-	border: none;
-	cursor: pointer;
 	transition: all 0.2s ease;
+	cursor: pointer;
 
 	&:hover {
 		background-color: var(--c-bg-3);
@@ -246,11 +246,11 @@ function clearSelectedTag() {
 }
 
 .tag-selected-info {
-	color: var(--c-text-2);
-	font-size: 1rem;
 	margin-bottom: 2rem;
 	padding-bottom: 1rem;
 	border-bottom: 1px solid var(--c-border);
+	font-size: 1rem;
+	color: var(--c-text-2);
 }
 
 .archive-list {
@@ -270,8 +270,8 @@ function clearSelectedTag() {
 	}
 
 	.tag-cloud-item {
-		padding: 0.4rem 0.8rem;
 		gap: 0.4rem;
+		padding: 0.4rem 0.8rem;
 	}
 
 	.tag-cloud-item.large {

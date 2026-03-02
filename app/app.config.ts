@@ -26,6 +26,8 @@ export default defineAppConfig({
 				'localhost',
 				'wudu.ltd',
 				'xnet.ren',
+				'connect.qq.com',
+				'service.weibo.com',
 			],
 			/** 强制跳转页面，支持字符串路径或正则表达式，这些页面会启用外链安全提示 */
 			pageWhitelist: [],

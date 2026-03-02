@@ -120,23 +120,23 @@ function formatDate(date: string | undefined): string {
 	transition: all 0.2s ease-out;
 
 	&:hover {
-		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
 		background-color: var(--c-bg-2);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+		transform: translateY(-2px);
 	}
 
 	.post-thumbnail {
 		flex-shrink: 0;
+		overflow: hidden;
 		width: 120px;
 		height: 80px;
-		overflow: hidden;
 		border-radius: 0.5rem;
 
 		img {
 			width: 100%;
 			height: 100%;
-			object-fit: cover;
 			transition: transform 0.2s ease-out;
+			object-fit: cover;
 		}
 
 		&:hover img {
@@ -145,33 +145,33 @@ function formatDate(date: string | undefined): string {
 	}
 
 	.post-content {
-		flex: 1;
 		display: flex;
+		flex: 1;
 		flex-direction: column;
 		gap: 0.4rem;
 		min-width: 0;
 
 		.post-title {
+			display: -webkit-box;
+			overflow: hidden;
 			font-size: 0.95rem;
 			font-weight: 600;
-			line-height: 1.4;
-			color: var(--c-text);
-			overflow: hidden;
-			display: -webkit-box;
 			-webkit-line-clamp: 2;
 			line-clamp: 2;
-			-webkit-box-orient: vertical;
+			line-height: 1.4;
+			color: var(--c-text);
 			transition: color 0.2s;
+			-webkit-box-orient: vertical;
 		}
 
 		.post-excerpt {
-			font-size: 0.8rem;
-			line-height: 1.4;
-			color: var(--c-text-2);
-			overflow: hidden;
 			display: -webkit-box;
+			overflow: hidden;
+			font-size: 0.8rem;
 			-webkit-line-clamp: 2;
 			line-clamp: 2;
+			line-height: 1.4;
+			color: var(--c-text-2);
 			-webkit-box-orient: vertical;
 		}
 

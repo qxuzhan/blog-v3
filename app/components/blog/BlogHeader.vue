@@ -68,12 +68,12 @@ const titleColor = computed(() => appConfig.header.titleColor || 'var(--c-text)'
 }
 
 @font-face {
-	font-family: LXGW WenKai;
+	font-family: "LXGW WenKai";
 	src: url("https://cdn.jsdmirror.com/gh/scfcn/Sharding-fonts@main/LXGWWenKai-Regular/result.css");
 }
 
 .header-title {
-	font-family: LXGW WenKai, "Noto Sans SC", sans-serif;
+	font-family: "LXGW WenKai", "Noto Sans SC", sans-serif;
 	font-size: 1.5em;
 	font-synthesis: none;
 	font-variation-settings: "wght" 600, "BEVL" 100;

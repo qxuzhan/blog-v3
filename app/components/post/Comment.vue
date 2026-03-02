@@ -60,7 +60,10 @@ onMounted(() => {
 
 	.tk-avatar {
 		overflow: hidden;
-		border-radius: 40%;
+		border-radius: 50%;
+		corner-shape: superellipse(1.2);
+		box-shadow: 2px 4px 0.5em var(--ld-shadow);
+		background-color: white;
 	}
 
 	.tk-submit {

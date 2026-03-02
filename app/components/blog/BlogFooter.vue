@@ -68,8 +68,8 @@ const appConfig = useAppConfig()
 
 	.footer-bottom {
 		display: flex;
-		align-items: center;
 		flex-wrap: wrap;
+		align-items: center;
 	}
 }
 </style>

@@ -110,6 +110,7 @@ const isClient = process.client
 	0%, 100% {
 		opacity: 0.4;
 	}
+
 	50% {
 		opacity: 0.6;
 	}

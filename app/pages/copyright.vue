@@ -61,53 +61,53 @@ layoutStore.setAside(['blog-log', 'blog-tech'])
 
 <style lang="scss" scoped>
 .copyright-page {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  line-height: 1.8;
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 2rem;
+	line-height: 1.8;
 }
 
 .page-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-  text-align: center;
-  color: var(--c-text);
+	margin-bottom: 2rem;
+	font-size: 2rem;
+	font-weight: 700;
+	text-align: center;
+	color: var(--c-text);
 }
 
 .content-section {
-  background-color: var(--c-card);
-  border-radius: var(--radius);
-  padding: 2rem;
-  box-shadow: var(--ld-shadow);
+	padding: 2rem;
+	border-radius: var(--radius);
+	box-shadow: var(--ld-shadow);
+	background-color: var(--c-card);
 }
 
 .info-group {
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--c-border);
+	margin-bottom: 2rem;
+	padding-bottom: 1.5rem;
+	border-bottom: 1px solid var(--c-border);
 
-  &:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-  }
+	&:last-child {
+		margin-bottom: 0;
+		padding-bottom: 0;
+		border-bottom: none;
+	}
 }
 
 h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  color: var(--c-primary);
+	margin-bottom: 1rem;
+	font-size: 1.5rem;
+	color: var(--c-primary);
 }
 
 h3 {
-  font-size: 1.2rem;
-  margin-bottom: 0.8rem;
-  color: var(--c-text);
+	margin-bottom: 0.8rem;
+	font-size: 1.2rem;
+	color: var(--c-text);
 }
 
 p {
-  margin-bottom: 0.8rem;
-  color: var(--c-text-secondary);
+	margin-bottom: 0.8rem;
+	color: var(--c-text-secondary);
 }
 </style>

@@ -179,8 +179,8 @@ onMounted(async () => {
 
 figcaption {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
+	justify-content: space-between;
 	gap: 1em;
 	position: sticky;
 	top: 0;
@@ -203,8 +203,8 @@ figcaption {
 	> .language {
 		opacity: 0.6;
 		font-size: 0.75em;
-		text-transform: uppercase;
 		letter-spacing: 0.05em;
+		text-transform: uppercase;
 		transition: opacity 0.2s;
 	}
 
@@ -237,10 +237,10 @@ pre {
 	--start-offset: 4em;
 
 	overflow: auto;
-	padding: 1rem;
-	padding-inline-start: var(--start-offset);
 	max-height: none;
+	padding: 1rem;
 	transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), mask-image 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	padding-inline-start: var(--start-offset);
 
 	&.wrap {
 		white-space: pre-wrap;
@@ -259,14 +259,14 @@ pre {
 	&::before {
 		content: attr(data-line);
 		position: absolute;
-		inset-inline-start: 0;
 		width: var(--start-offset);
-		padding-inline-end: 1em;
 		background-color: var(--c-bg-2);
 		text-align: end;
 		color: var(--c-text-3);
-		z-index: 1;
 		transition: color 0.2s;
+		z-index: 1;
+		inset-inline-start: 0;
+		padding-inline-end: 1em;
 	}
 
 	&.highlight {
