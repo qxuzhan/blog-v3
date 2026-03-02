@@ -98,6 +98,12 @@ const blogConfig = {
 		envId: 'https://twikoo.qixz.cn/',
 		preload: 'https://twikoo.qixz.cn/',
 	},
+
+	/** ChronoFrame 图驿服务配置 */
+	chronoframe: {
+		/** ChronoFrame 部署地址 */
+		baseUrl: 'https://tuyi.qixz.cn',
+	},
 }
 
 /** 用于生成 OPML 和友链页面配置 */

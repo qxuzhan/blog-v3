@@ -155,6 +155,7 @@ export default defineAppConfig({
 				{ icon: 'ph:link-bold', text: '友链', url: '/link' },
 				{ icon: 'ph:fish-bold', text: '鱼塘', url: '/fcircle' },
 				{ icon: 'ph:chat-centered-dots-bold', text: '说说', url: '/essay' },
+				{ icon: 'ph:images-bold', text: '图驿', url: '/gallery' },
 				{ icon: 'ph:laptop-bold', text: '装备', url: '/devices' },
 			],
 		},
