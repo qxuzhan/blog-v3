@@ -2,7 +2,7 @@ name: Friend Link Manager
 
 on:
   issues:
-    types: [opened, labeled, unlabeled]
+    types: [labeled]
 
 permissions:
   issues: write
@@ -17,7 +17,7 @@ env:
 jobs:
   check-and-process:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'friend-link/')
+    if: startsWith(github.event.label.name, 'friend-link/')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,24 +42,21 @@ jobs:
         id: check
         env:
           MY_SITE_URL: ${{ env.MY_SITE_URL }}
-        run: |
-          node scripts/friend-link-check.mjs
+        run: node scripts/friend-link-check.mjs
 
       - name: Determine Action
         id: action
-        env:
-          LABELS: ${{ toJson(github.event.issue.labels.*.name) }}
         run: |
-          labels='${{ env.LABELS }}'
+          label="${{ github.event.label.name }}"
           action="none"
           
-          if echo "$labels" | grep -q '"friend-link/add"'; then
+          if [[ "$label" == "friend-link/add" ]]; then
             action="add"
-          elif echo "$labels" | grep -q '"friend-link/remove"'; then
+          elif [[ "$label" == "friend-link/remove" ]]; then
             action="remove"
-          elif echo "$labels" | grep -q '"friend-link/update"'; then
+          elif [[ "$label" == "friend-link/update" ]]; then
             action="update"
-          elif echo "$labels" | grep -q '"friend-link/check"'; then
+          elif [[ "$label" == "friend-link/check" ]]; then
             action="check"
           fi
           
@@ -72,8 +69,7 @@ jobs:
         env:
           ACTION: ${{ steps.action.outputs.action }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          node scripts/friend-link-action.mjs
+        run: node scripts/friend-link-action.mjs
 
       - name: Create Result Comment
         uses: actions/github-script@v7
@@ -152,11 +148,12 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const checkResult = require('fs').existsSync('check-result.json') 
-              ? JSON.parse(require('fs').readFileSync('check-result.json', 'utf8'))
+            const fs = require('fs');
+            
+            const checkResult = fs.existsSync('check-result.json') 
+              ? JSON.parse(fs.readFileSync('check-result.json', 'utf8'))
               : {};
             
-            const currentLabels = context.payload.issue.labels.map(l => l.name);
             const labelsToAdd = [];
             const labelsToRemove = [];
             

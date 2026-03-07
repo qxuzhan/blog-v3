@@ -92,7 +92,7 @@ body:
     id: archs
     attributes:
       label: 技术架构
-      description: 博客使用的技术栈，用逗号分隔（可选）
+      description: 博客使用的技术栈，仅支持以下文本:服务器、国内 CDN、虚拟主机、Astro、Cloudflare、Deploy、EdgeOne、Esa、GitHub Pages、Golang、Gridea、Halo、Hexo、HTML、Hugo、Jekyll、Mix Space、Netlify、Next.js、NotionNext、Nuxt、PHP、Python、React、Typecho、Veercel、VitePress、Vue、VuePress、WordPress、Zebaur
       placeholder: 例如：Hexo, Vercel
 
   - type: textarea
