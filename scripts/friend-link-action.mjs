@@ -1,9 +1,15 @@
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, appendFileSync } from 'fs';
 import { execSync } from 'child_process';
 
 const FEEDS_FILE = process.env.FEEDS_FILE || 'app/feeds.ts';
 const ACTION = process.env.ACTION;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+
+function setOutput(name, value) {
+  if (process.env.GITHUB_OUTPUT) {
+    appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
+  }
+}
 
 function getTodayDate() {
   return new Date().toISOString().split('T')[0];
@@ -232,7 +238,7 @@ function main() {
   switch (ACTION) {
     case 'add':
       if (!checkResult.allPassed) {
-        console.log('::set-output name=result::❌ 检测未通过，无法添加友链');
+        setOutput('result', '❌ 检测未通过，无法添加友链');
         process.exit(0);
       }
       result = addEntry(content, data);
@@ -252,16 +258,16 @@ function main() {
   }
 
   if (!result.success) {
-    console.log(`::set-output name=result::❌ ${result.message}`);
+    setOutput('result', `❌ ${result.message}`);
     process.exit(0);
   }
 
   writeFileSync(FEEDS_FILE, result.content);
   
   if (gitCommit(commitMessage)) {
-    console.log(`::set-output name=result::✅ 友链已成功${ACTION === 'add' ? '添加' : ACTION === 'remove' ? '移除' : '更新'}`);
+    setOutput('result', `✅ 友链已成功${ACTION === 'add' ? '添加' : ACTION === 'remove' ? '移除' : '更新'}`);
   } else {
-    console.log('::set-output name=result::⚠️ 文件已修改但提交失败，请手动检查');
+    setOutput('result', '⚠️ 文件已修改但提交失败，请手动检查');
   }
 }
 
