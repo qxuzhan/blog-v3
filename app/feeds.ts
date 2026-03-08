@@ -763,7 +763,7 @@ export default [
 				avatar: 'https://image.lolimi.cn/2026/03/07/69ac21165c675.webp',
 				archs: ['Halo', 'Cloudflare'],
 				date: '2026-03-07',
-				comment: '_No response_',
+				comment: '',
 			},
 		],
 	},
