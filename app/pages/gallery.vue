@@ -26,6 +26,8 @@ const selectedPhoto = ref<ChronoFramePhoto | null>(null)
 const showLightbox = ref(false)
 const lightboxImageLoaded = ref(false)
 const showBoundaryTip = ref('')
+const isLivePlaying = ref(false)
+const liveVideoRef = useTemplateRef<HTMLVideoElement>('liveVideoRef')
 let boundaryTipTimer: ReturnType<typeof setTimeout> | null = null
 
 const currentIndex = computed(() => {
@@ -59,12 +61,28 @@ function openPhoto(photo: ChronoFramePhoto) {
 	selectedPhoto.value = photo
 	showLightbox.value = true
 	lightboxImageLoaded.value = false
+	isLivePlaying.value = false
 }
 
 function closeLightbox() {
 	showLightbox.value = false
 	selectedPhoto.value = null
 	lightboxImageLoaded.value = false
+	isLivePlaying.value = false
+}
+
+function toggleLivePhoto() {
+	if (!liveVideoRef.value)
+		return
+
+	if (isLivePlaying.value) {
+		liveVideoRef.value.pause()
+		isLivePlaying.value = false
+	}
+	else {
+		liveVideoRef.value.play()
+		isLivePlaying.value = true
+	}
 }
 
 function showTip(tip: string) {
@@ -251,19 +269,38 @@ onUnmounted(() => {
 						:src="getPhotoUrl(selectedPhoto, 'thumbnail')"
 						:alt="selectedPhoto.title || '照片'"
 						class="lightbox-image thumb"
-						:class="{ hidden: lightboxImageLoaded }"
+						:class="{ hidden: lightboxImageLoaded || isLivePlaying }"
 					>
 					<img
-						v-show="lightboxImageLoaded"
+						v-show="lightboxImageLoaded && !isLivePlaying"
 						:src="getPhotoUrl(selectedPhoto, 'original')"
 						:alt="selectedPhoto.title || '照片'"
 						class="lightbox-image full"
-						:class="{ visible: lightboxImageLoaded }"
+						:class="{ visible: lightboxImageLoaded && !isLivePlaying }"
 						@load="lightboxImageLoaded = true"
 					>
-					<div v-if="!lightboxImageLoaded" class="loading-spinner">
+					<video
+						v-if="selectedPhoto.isLivePhoto && selectedPhoto.livePhotoVideoUrl"
+						ref="liveVideoRef"
+						:src="selectedPhoto.livePhotoVideoUrl"
+						class="lightbox-image full"
+						:class="{ visible: isLivePlaying }"
+						playsinline
+						muted
+						@ended="isLivePlaying = false"
+					/>
+					<div v-if="!lightboxImageLoaded && !isLivePlaying" class="loading-spinner">
 						<Icon name="ph:spinner-bold" class="spin" />
 					</div>
+					<button
+						v-if="selectedPhoto.isLivePhoto && selectedPhoto.livePhotoVideoUrl"
+						class="live-play-btn"
+						:class="{ playing: isLivePlaying }"
+						@click="toggleLivePhoto"
+					>
+						<Icon :name="isLivePlaying ? 'ph:pause-bold' : 'ph:play-bold'" />
+						<span>{{ isLivePlaying ? 'LIVE' : 'LIVE' }}</span>
+					</button>
 				</div>
 
 				<div class="lightbox-info">
@@ -686,6 +723,40 @@ onUnmounted(() => {
 
 	.spin {
 		animation: spin 1s linear infinite;
+	}
+}
+
+.live-play-btn {
+	position: absolute;
+	bottom: 1rem;
+	left: 1rem;
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.5rem 0.75rem;
+	border: none;
+	border-radius: 20px;
+	background: rgb(0 0 0 / 50%);
+	color: white;
+	font-size: 0.8rem;
+	cursor: pointer;
+	transition: all 0.2s;
+	backdrop-filter: blur(10px);
+
+	&:hover {
+		background: rgb(0 0 0 / 70%);
+	}
+
+	&.playing {
+		background: rgb(255 255 255 / 20%);
+
+		span {
+			color: #4ade80;
+		}
+	}
+
+	.icon {
+		font-size: 1rem;
 	}
 }
 

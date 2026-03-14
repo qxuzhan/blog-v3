@@ -1,294 +1,310 @@
-import { readFileSync, writeFileSync } from 'node:fs'
-import process from 'node:process'
+import { readFileSync, writeFileSync } from 'fs';
 
-const MY_SITE_URL = process.env.MY_SITE_URL || 'https://www.qixz.cn/'
-const TIMEOUT = 15000
+const MY_SITE_URL = process.env.MY_SITE_URL || 'https://www.qixz.cn/';
+const TIMEOUT = 30000;
 
 const VALID_ARCHS = [
-	'服务器',
-	'国内 CDN',
-	'虚拟主机',
-	'Astro',
-	'Cloudflare',
-	'Deno Deploy',
-	'EdgeOne',
-	'Esa',
-	'GitHub Pages',
-	'Golang',
-	'Gridea',
-	'Halo',
-	'Hexo',
-	'HTML',
-	'Hugo',
-	'Jekyll',
-	'Mix Space',
-	'Netlify',
-	'Next.js',
-	'NotionNext',
-	'Nuxt',
-	'PHP',
-	'Python',
-	'React',
-	'Typecho',
-	'Vercel',
-	'VitePress',
-	'Vue',
-	'VuePress',
-	'WordPress',
-	'Zebaur',
-]
+  '服务器', '国内 CDN', '虚拟主机',
+  'Astro', 'Cloudflare', 'Deno Deploy', 'EdgeOne', 'Esa',
+  'GitHub Pages', 'Golang', 'Gridea', 'Halo', 'Hexo', 'HTML',
+  'Hugo', 'Jekyll', 'Mix Space', 'Netlify', 'Next.js', 'NotionNext',
+  'Nuxt', 'PHP', 'Python', 'React', 'Typecho', 'Vercel',
+  'VitePress', 'Vue', 'VuePress', 'WordPress', 'Zebaur',
+];
 
 async function fetchWithTimeout(url, options = {}) {
-	const controller = new AbortController()
-	const timeout = setTimeout(() => controller.abort(), TIMEOUT)
-
-	try {
-		const response = await fetch(url, {
-			...options,
-			signal: controller.signal,
-			redirect: 'follow',
-			headers: {
-				'User-Agent': 'Mozilla/5.0 (compatible; FriendLinkChecker/1.0)',
-				...options.headers,
-			},
-		})
-		clearTimeout(timeout)
-		return response
-	}
-	catch (error) {
-		clearTimeout(timeout)
-		throw error
-	}
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        ...options.headers,
+      },
+    });
+    clearTimeout(timeout);
+    return response;
+  } catch (error) {
+    clearTimeout(timeout);
+    throw error;
+  }
 }
 
 async function checkSiteConnectivity(url) {
-	try {
-		const response = await fetchWithTimeout(url)
-		if (response.ok) {
-			return {
-				status: 'pass',
-				message: `HTTP ${response.status}`,
-			}
-		}
-		return {
-			status: 'fail',
-			message: `HTTP ${response.status}`,
-		}
-	}
-	catch (error) {
-		if (error.name === 'AbortError') {
-			return {
-				status: 'fail',
-				message: '请求超时',
-			}
-		}
-		return {
-			status: 'fail',
-			message: error.message || '无法访问',
-		}
-	}
+  try {
+    const response = await fetchWithTimeout(url);
+    if (response.ok) {
+      return {
+        status: 'pass',
+        message: `HTTP ${response.status}`,
+      };
+    }
+    return {
+      status: 'fail',
+      message: `HTTP ${response.status}`,
+    };
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      return {
+        status: 'fail',
+        message: '请求超时',
+      };
+    }
+    return {
+      status: 'fail',
+      message: error.message || '无法访问',
+    };
+  }
 }
 
 async function checkLinkBack(linkPageUrl, mySiteUrl) {
-	if (!linkPageUrl) {
-		return {
-			status: 'fail',
-			message: '未提供友链页面地址',
-		}
-	}
+  if (!linkPageUrl) {
+    return {
+      status: 'fail',
+      message: '未提供友链页面地址',
+    };
+  }
 
-	try {
-		const response = await fetchWithTimeout(linkPageUrl)
-		if (!response.ok) {
-			return {
-				status: 'fail',
-				message: `友链页面无法访问 (HTTP ${response.status})`,
-			}
-		}
+  try {
+    const response = await fetchWithTimeout(linkPageUrl);
+    if (!response.ok) {
+      return {
+        status: 'fail',
+        message: `友链页面无法访问 (HTTP ${response.status})`,
+      };
+    }
 
-		const html = await response.text()
-		const myUrlWithoutProtocol = mySiteUrl.replace(/^https?:\/\//, '')
+    const html = await response.text();
+    const myUrlWithoutProtocol = mySiteUrl.replace(/^https?:\/\//, '');
+    const myDomain = myUrlWithoutProtocol.replace(/\/.*$/, '');
+    
+    const patterns = [
+      mySiteUrl,
+      myUrlWithoutProtocol,
+      mySiteUrl.replace(/\/$/, ''),
+      myUrlWithoutProtocol.replace(/\/$/, ''),
+      myDomain,
+    ];
 
-		const patterns = [
-			mySiteUrl,
-			myUrlWithoutProtocol,
-			mySiteUrl.replace(/\/$/, ''),
-			myUrlWithoutProtocol.replace(/\/$/, ''),
-		]
+    const found = patterns.some(pattern => 
+      html.toLowerCase().includes(pattern.toLowerCase())
+    );
 
-		const found = patterns.some(pattern =>
-			html.toLowerCase().includes(pattern.toLowerCase()),
-		)
+    if (found) {
+      return {
+        status: 'pass',
+        message: '已找到本站链接',
+      };
+    }
 
-		if (found) {
-			return {
-				status: 'pass',
-				message: '已找到本站链接',
-			}
-		}
+    const isDynamicSite = /<html[^>]*\sdata-svelte|data-vue|ng-app|react-root/i.test(html) ||
+                          /typeof window|document\.readyState|__NEXT_DATA__|__NUXT__|__vue__/i.test(html);
 
-		return {
-			status: 'fail',
-			message: '未找到本站链接',
-		}
-	}
-	catch (error) {
-		if (error.name === 'AbortError') {
-			return {
-				status: 'fail',
-				message: '友链页面请求超时',
-			}
-		}
-		return {
-			status: 'fail',
-			message: error.message || '无法访问友链页面',
-		}
-	}
+    if (isDynamicSite) {
+      return {
+        status: 'warn',
+        message: '页面可能为动态渲染，请确保友链已正确添加',
+      };
+    }
+
+    return {
+      status: 'fail',
+      message: '未找到本站链接',
+    };
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      return {
+        status: 'fail',
+        message: '友链页面请求超时',
+      };
+    }
+    return {
+      status: 'fail',
+      message: error.message || '无法访问友链页面',
+    };
+  }
 }
 
 async function checkAvatarValid(avatarUrl) {
-	if (!avatarUrl) {
-		return {
-			status: 'fail',
-			message: '未提供头像链接',
-		}
-	}
+  if (!avatarUrl) {
+    return {
+      status: 'fail',
+      message: '未提供头像链接',
+    };
+  }
 
-	try {
-		const response = await fetchWithTimeout(avatarUrl, { method: 'HEAD' })
-		if (response.ok) {
-			const contentType = response.headers.get('content-type')
-			if (contentType && contentType.startsWith('image/')) {
-				return {
-					status: 'pass',
-					message: '头像可访问',
-				}
-			}
-			return {
-				status: 'warn',
-				message: `非图片类型: ${contentType || 'unknown'}`,
-			}
-		}
-		return {
-			status: 'fail',
-			message: `HTTP ${response.status}`,
-		}
-	}
-	catch (error) {
-		if (error.name === 'AbortError') {
-			return {
-				status: 'fail',
-				message: '请求超时',
-			}
-		}
-		return {
-			status: 'fail',
-			message: error.message || '无法访问',
-		}
-	}
+  try {
+    const response = await fetchWithTimeout(avatarUrl, { method: 'HEAD' });
+    if (response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.startsWith('image/')) {
+        return {
+          status: 'pass',
+          message: '头像可访问',
+        };
+      }
+      return {
+        status: 'warn',
+        message: `非图片类型: ${contentType || 'unknown'}`,
+      };
+    }
+    return {
+      status: 'fail',
+      message: `HTTP ${response.status}`,
+    };
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      return {
+        status: 'fail',
+        message: '请求超时',
+      };
+    }
+    return {
+      status: 'fail',
+      message: error.message || '无法访问',
+    };
+  }
 }
 
 async function checkSSL(url) {
-	try {
-		const urlObj = new URL(url)
-		if (urlObj.protocol !== 'https:') {
-			return {
-				status: 'warn',
-				message: '未使用 HTTPS',
-			}
-		}
-		return {
-			status: 'pass',
-			message: 'HTTPS 已启用',
-		}
-	}
-	catch {
-		return {
-			status: 'fail',
-			message: '无效的 URL',
-		}
-	}
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.protocol !== 'https:') {
+      return {
+        status: 'warn',
+        message: '未使用 HTTPS',
+      };
+    }
+    return {
+      status: 'pass',
+      message: 'HTTPS 已启用',
+    };
+  } catch {
+    return {
+      status: 'fail',
+      message: '无效的 URL',
+    };
+  }
 }
 
 function checkArchs(archsStr) {
-	if (!archsStr || archsStr.trim() === '') {
-		return {
-			status: 'pass',
-			message: '未填写技术架构',
-			validArchs: [],
-			invalidArchs: [],
-		}
-	}
+  if (!archsStr || archsStr.trim() === '') {
+    return {
+      status: 'pass',
+      message: '未填写技术架构',
+      validArchs: [],
+      invalidArchs: [],
+    };
+  }
 
-	const archs = archsStr.split(',').map(a => a.trim()).filter(a => a)
-	const validArchs = []
-	const invalidArchs = []
+  const archs = archsStr.split(',').map(a => a.trim()).filter(a => a);
+  const validArchs = [];
+  const invalidArchs = [];
 
-	for (const arch of archs) {
-		if (VALID_ARCHS.includes(arch)) {
-			validArchs.push(arch)
-		}
-		else {
-			invalidArchs.push(arch)
-		}
-	}
+  for (const arch of archs) {
+    if (VALID_ARCHS.includes(arch)) {
+      validArchs.push(arch);
+    } else {
+      invalidArchs.push(arch);
+    }
+  }
 
-	if (invalidArchs.length === 0) {
-		return {
-			status: 'pass',
-			message: validArchs.length > 0 ? `有效: ${validArchs.join(', ')}` : '未填写技术架构',
-			validArchs,
-			invalidArchs,
-		}
-	}
+  if (invalidArchs.length === 0) {
+    return {
+      status: 'pass',
+      message: validArchs.length > 0 ? `有效: ${validArchs.join(', ')}` : '未填写技术架构',
+      validArchs,
+      invalidArchs,
+    };
+  }
 
-	return {
-		status: 'fail',
-		message: `无效的技术架构: ${invalidArchs.join(', ')}。有效选项: ${VALID_ARCHS.join(', ')}`,
-		validArchs,
-		invalidArchs,
-	}
+  return {
+    status: 'fail',
+    message: `无效的技术架构: ${invalidArchs.join(', ')}。有效选项: ${VALID_ARCHS.join(', ')}`,
+    validArchs,
+    invalidArchs,
+  };
+}
+
+async function verifyIdentity(originalIssueId, link, actor, owner) {
+  const isOwner = actor === owner;
+  
+  if (!originalIssueId) {
+    if (isOwner) {
+      return {
+        status: 'pass',
+        message: '仓库所有者手动处理',
+        isOwner: true,
+        needsManualReview: false,
+      };
+    }
+    return {
+      status: 'fail',
+      message: '缺少原始申请 Issue ID',
+      isOwner: false,
+      needsManualReview: true,
+    };
+  }
+
+  return {
+    status: 'pass',
+    message: '身份验证通过',
+    isOwner,
+    needsManualReview: false,
+    originalIssueId: originalIssueId.toString(),
+  };
 }
 
 async function main() {
-	let data = {}
-	try {
-		data = JSON.parse(readFileSync('issue-data.json', 'utf8'))
-	}
-	catch (e) {
-		console.error('Failed to read issue-data.json:', e.message)
-	}
+  let data = {};
+  try {
+    data = JSON.parse(readFileSync('issue-data.json', 'utf8'));
+  } catch (e) {
+    console.error('Failed to read issue-data.json:', e.message);
+  }
 
-	console.log('Checking friend link for:', data.link)
-	console.log('Link page:', data.linkPage)
+  console.log('Checking friend link for:', data.link);
+  console.log('Link page:', data.linkPage);
+  console.log('Original Issue ID:', data.originalIssueId);
 
-	const [siteConnectivity, linkBack, avatarValid, sslValid, archsValid] = await Promise.all([
-		checkSiteConnectivity(data.link),
-		checkLinkBack(data.linkPage, MY_SITE_URL),
-		checkAvatarValid(data.avatar),
-		checkSSL(data.link),
-		Promise.resolve(checkArchs(data.archs)),
-	])
+  const [siteConnectivity, linkBack, avatarValid, sslValid, archsValid, identity] = await Promise.all([
+    checkSiteConnectivity(data.link),
+    checkLinkBack(data.linkPage, MY_SITE_URL),
+    checkAvatarValid(data.avatar),
+    checkSSL(data.link),
+    Promise.resolve(checkArchs(data.archs)),
+    Promise.resolve(verifyIdentity(data.originalIssueId, data.link, data.actor, data.owner)),
+  ]);
 
-	const allPassed
-		= siteConnectivity.status === 'pass'
-			&& linkBack.status === 'pass'
-			&& avatarValid.status !== 'fail'
-			&& archsValid.status === 'pass'
+  const requiresManualReview = identity.needsManualReview || linkBack.status === 'warn';
+  
+  const allPassed = !requiresManualReview &&
+    siteConnectivity.status === 'pass' && 
+    linkBack.status === 'pass' && 
+    avatarValid.status !== 'fail' &&
+    archsValid.status === 'pass';
 
-	const result = {
-		data,
-		siteConnectivity,
-		linkBack,
-		avatarValid,
-		sslValid,
-		archsValid,
-		allPassed,
-		checkedAt: new Date().toISOString(),
-	}
+  const result = {
+    data,
+    siteConnectivity,
+    linkBack,
+    avatarValid,
+    sslValid,
+    archsValid,
+    identity,
+    allPassed,
+    requiresManualReview,
+    checkedAt: new Date().toISOString(),
+  };
 
-	writeFileSync('check-result.json', JSON.stringify(result, null, 2))
-	console.log('Check result:', JSON.stringify(result, null, 2))
+  writeFileSync('check-result.json', JSON.stringify(result, null, 2));
+  console.log('Check result:', JSON.stringify(result, null, 2));
 }
 
-main().catch(console.error)
+main().catch(console.error);

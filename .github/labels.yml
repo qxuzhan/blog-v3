@@ -13,8 +13,14 @@ labels:
   - name: friend-link/check
     description: 仅检测，不执行操作
     color: 1D76DB
+  - name: friend-link/pending
+    description: 待人工审核
+    color: FBCA04
+  - name: friend-link/approve
+    description: 审核通过
+    color: 0E8A16
   - name: friend-link/passed
-    description: 检测通过
+    description: 检测通过/已处理
     color: 0E8A16
   - name: friend-link/failed
     description: 检测未通过

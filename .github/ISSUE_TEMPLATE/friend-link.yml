@@ -1,5 +1,5 @@
 name: 友链申请
-description: 申请添加友情链接
+description: 申请添加友链
 labels: [friend-link/add]
 body:
   - type: markdown
@@ -108,7 +108,7 @@ body:
     attributes:
       label: 确认事项
       options:
-        - label: 我已添加友情链接
+        - label: 我已添加本站友链
           required: true
         - label: 我的博客符合友链规则
           required: true
