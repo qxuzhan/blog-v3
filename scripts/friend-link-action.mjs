@@ -1,287 +1,220 @@
-import { execSync } from 'node:child_process'
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
-import process from 'node:process'
+import { readFileSync, writeFileSync, appendFileSync } from 'fs';
+import { execSync } from 'child_process';
 
-const FEEDS_FILE = process.env.FEEDS_FILE || 'app/feeds.ts'
-const ACTION = process.env.ACTION
+const FEEDS_FILE = process.env.FEEDS_FILE || 'app/feeds.ts';
+const ACTION = process.env.ACTION || 'add';
 
 function setOutput(name, value) {
-	if (process.env.GITHUB_OUTPUT) {
-		appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`)
-	}
+  if (process.env.GITHUB_OUTPUT) {
+    appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
+  }
 }
 
 function getTodayDate() {
-	return new Date().toISOString().split('T')[0]
+  return new Date().toISOString().split('T')[0];
 }
 
-function createEntry(data, validArchs) {
-	const entry = {
-		author: data.author,
-		sitenick: data.sitenick || '',
-		title: data.title,
-		desc: data.desc,
-		link: data.link,
-		feed: data.feed || '',
-		icon: data.avatar,
-		avatar: data.avatar,
-		archs: validArchs || [],
-		date: getTodayDate(),
-		comment: data.comment || '',
-	}
-	return entry
+function createEntry(data) {
+  return {
+    author: data.author || '',
+    sitenick: data.sitenick || '',
+    title: data.title || '',
+    desc: data.desc || '',
+    link: data.link || '',
+    feed: data.feed || '',
+    icon: data.avatar || '',
+    avatar: data.avatar || '',
+    archs: data.validArchs || [],
+    date: getTodayDate(),
+    comment: data.comment || '',
+  };
 }
 
 function formatEntry(entry, indent = '\t\t\t') {
-	const lines = ['{']
-	lines.push(`${indent}author: '${escapeString(entry.author)}',`)
-	if (entry.sitenick) {
-		lines.push(`${indent}sitenick: '${escapeString(entry.sitenick)}',`)
-	}
-	else {
-		lines.push(`${indent}sitenick: '',`)
-	}
-	lines.push(`${indent}title: '${escapeString(entry.title)}',`)
-	lines.push(`${indent}desc: '${escapeString(entry.desc)}',`)
-	lines.push(`${indent}link: '${escapeString(entry.link)}',`)
-	lines.push(`${indent}feed: '${escapeString(entry.feed || '')}',`)
-	lines.push(`${indent}icon: '${escapeString(entry.icon)}',`)
-	lines.push(`${indent}avatar: '${escapeString(entry.avatar)}',`)
-	if (entry.archs && entry.archs.length > 0) {
-		lines.push(`${indent}archs: [${entry.archs.map(a => `'${escapeString(a)}'`).join(', ')}],`)
-	}
-	lines.push(`${indent}date: '${entry.date}',`)
-	if (entry.comment) {
-		lines.push(`${indent}comment: '${escapeString(entry.comment)}',`)
-	}
-	lines.push(`${indent.slice(0, -1)}},`)
-	return lines.join('\n')
+  const lines = ['{'];
+  lines.push(`${indent}author: '${escape(entry.author)}',`);
+  lines.push(`${indent}sitenick: '${escape(entry.sitenick)}',`);
+  lines.push(`${indent}title: '${escape(entry.title)}',`);
+  lines.push(`${indent}desc: '${escape(entry.desc)}',`);
+  lines.push(`${indent}link: '${escape(entry.link)}',`);
+  lines.push(`${indent}feed: '${escape(entry.feed)}',`);
+  lines.push(`${indent}icon: '${escape(entry.icon)}',`);
+  lines.push(`${indent}avatar: '${escape(entry.avatar)}',`);
+  if (entry.archs?.length) {
+    lines.push(`${indent}archs: [${entry.archs.map(a => `'${escape(a)}'`).join(', ')}],`);
+  }
+  lines.push(`${indent}date: '${entry.date}',`);
+  if (entry.comment) {
+    lines.push(`${indent}comment: '${escape(entry.comment)}',`);
+  }
+  lines.push(`${indent.slice(0, -1)}},`);
+  return lines.join('\n');
 }
 
-function escapeString(str) {
-	if (!str)
-		return ''
-	return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/\n/g, '\\n')
+function escape(str) {
+  if (!str) return '';
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
 }
 
-function escapeRegExp(string) {
-	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function findEntryPosition(content, link) {
-	const linkPattern = new RegExp(`link:\\s*['"\`]${escapeRegExp(link)}['"\`]`, 'i')
-	const lines = content.split('\n')
-
-	for (let i = 0; i < lines.length; i++) {
-		if (linkPattern.test(lines[i])) {
-			let startIndex = -1
-			for (let j = i; j >= 0; j--) {
-				if (lines[j].includes('{') && !lines[j].includes('}')) {
-					startIndex = j
-					break
-				}
-			}
-
-			if (startIndex === -1)
-				return null
-
-			let braceCount = 0
-			let endIndex = startIndex
-			let foundStart = false
-
-			for (let j = startIndex; j < lines.length; j++) {
-				for (const char of lines[j]) {
-					if (char === '{') {
-						braceCount++
-						foundStart = true
-					}
-					else if (char === '}') {
-						braceCount--
-						if (foundStart && braceCount === 0) {
-							endIndex = j
-							break
-						}
-					}
-				}
-				if (foundStart && braceCount === 0)
-					break
-			}
-
-			return { startIndex, endIndex }
-		}
-	}
-	return null
+function findEntry(content, link) {
+  const pattern = new RegExp(`link:\\s*['"\`]${escapeRegExp(link)}['"\`]`, 'i');
+  const lines = content.split('\n');
+  
+  for (let i = 0; i < lines.length; i++) {
+    if (pattern.test(lines[i])) {
+      let start = -1;
+      for (let j = i; j >= 0; j--) {
+        if (lines[j].includes('{') && !lines[j].includes('}')) {
+          start = j;
+          break;
+        }
+      }
+      if (start === -1) continue;
+      
+      let braces = 0, found = false, end = start;
+      for (let j = start; j < lines.length; j++) {
+        for (const c of lines[j]) {
+          if (c === '{') { braces++; found = true; }
+          if (c === '}') { braces--; if (found && braces === 0) { end = j; break; } }
+        }
+        if (found && braces === 0) break;
+      }
+      return { start, end };
+    }
+  }
+  return null;
 }
 
-function findGroupEndPosition(content, groupName) {
-	const groupPattern = new RegExp(`name:\\s*['"\`]${escapeRegExp(groupName)}['"\`]`)
-	const lines = content.split('\n')
-
-	for (let i = 0; i < lines.length; i++) {
-		if (groupPattern.test(lines[i])) {
-			let entriesStart = -1
-			for (let j = i; j < lines.length; j++) {
-				if (lines[j].includes('entries: [')) {
-					entriesStart = j
-					break
-				}
-			}
-
-			if (entriesStart === -1)
-				return -1
-
-			let bracketCount = 0
-			let foundStart = false
-
-			for (let j = entriesStart; j < lines.length; j++) {
-				for (const char of lines[j]) {
-					if (char === '[') {
-						bracketCount++
-						foundStart = true
-					}
-					else if (char === ']') {
-						bracketCount--
-						if (foundStart && bracketCount === 0) {
-							return j
-						}
-					}
-				}
-			}
-		}
-	}
-	return -1
+function findGroupEnd(content, groupName) {
+  const pattern = new RegExp(`name:\\s*['"\`]${escapeRegExp(groupName)}['"\`]`);
+  const lines = content.split('\n');
+  
+  for (let i = 0; i < lines.length; i++) {
+    if (pattern.test(lines[i])) {
+      for (let j = i; j < lines.length; j++) {
+        if (lines[j].includes('entries: [')) {
+          let brackets = 0, found = false;
+          for (let k = j; k < lines.length; k++) {
+            for (const c of lines[k]) {
+              if (c === '[') { brackets++; found = true; }
+              if (c === ']') { brackets--; if (found && brackets === 0) return k; }
+            }
+          }
+        }
+      }
+    }
+  }
+  return -1;
 }
 
-function addEntry(content, data, validArchs) {
-	const entry = createEntry(data, validArchs)
-	const existingPos = findEntryPosition(content, data.link)
-
-	if (existingPos) {
-		return { success: false, message: '该链接已存在于友链中' }
-	}
-
-	const groupEndIndex = findGroupEndPosition(content, '『网上邻居』')
-	if (groupEndIndex === -1) {
-		return { success: false, message: '未找到目标分组' }
-	}
-
-	const lines = content.split('\n')
-	const entryStr = formatEntry(entry, '\t\t\t')
-
-	lines.splice(groupEndIndex, 0, entryStr)
-
-	return { success: true, content: lines.join('\n'), entry }
+function addEntry(content, data) {
+  const entry = createEntry(data);
+  const existing = findEntry(content, data.link);
+  if (existing) return { success: false, message: '友链已存在' };
+  
+  const idx = findGroupEnd(content, '『网上邻居』');
+  if (idx === -1) return { success: false, message: '未找到分组' };
+  
+  const lines = content.split('\n');
+  lines.splice(idx, 0, formatEntry(entry, '\t\t\t'));
+  return { success: true, content: lines.join('\n'), entry };
 }
 
 function removeEntry(content, link) {
-	const pos = findEntryPosition(content, link)
-
-	if (!pos) {
-		return { success: false, message: '未找到该友链' }
-	}
-
-	const lines = content.split('\n')
-	lines.splice(pos.startIndex, pos.endIndex - pos.startIndex + 1)
-
-	return { success: true, content: lines.join('\n') }
+  const pos = findEntry(content, link);
+  if (!pos) return { success: false, message: '未找到友链' };
+  
+  const lines = content.split('\n');
+  lines.splice(pos.start, pos.end - pos.start + 1);
+  return { success: true, content: lines.join('\n') };
 }
 
-function updateEntry(content, data, validArchs) {
-	const pos = findEntryPosition(content, data.link)
-
-	if (!pos) {
-		return { success: false, message: '未找到该友链，将尝试添加' }
-	}
-
-	const entry = createEntry(data, validArchs)
-	const lines = content.split('\n')
-	const entryStr = formatEntry(entry, '\t\t\t')
-
-	lines.splice(pos.startIndex, pos.endIndex - pos.startIndex + 1, entryStr)
-
-	return { success: true, content: lines.join('\n'), entry }
+function updateEntry(content, data, originalLink) {
+  const link = originalLink || data.link;
+  const pos = findEntry(content, link);
+  if (!pos) return { success: false, message: '未找到友链' };
+  
+  const mergedData = { ...data, link };
+  const entry = createEntry(mergedData);
+  const lines = content.split('\n');
+  
+  lines.splice(pos.start, pos.end - pos.start + 1, formatEntry(entry, '\t\t\t'));
+  return { success: true, content: lines.join('\n'), entry };
 }
 
-function gitCommit(message) {
-	try {
-		execSync('git config user.name "github-actions[bot]"', { stdio: 'inherit' })
-		execSync('git config user.email "github-actions[bot]@users.noreply.github.com"', { stdio: 'inherit' })
-		execSync(`git add ${FEEDS_FILE}`, { stdio: 'inherit' })
-		execSync(`git commit -m "${message}"`, { stdio: 'inherit' })
-		execSync('git push', { stdio: 'inherit' })
-		return true
-	}
-	catch (error) {
-		console.error('Git operation failed:', error.message)
-		return false
-	}
+function gitCommit(msg) {
+  try {
+    execSync('git config user.name "github-actions[bot]"', { stdio: 'inherit' });
+    execSync('git config user.email "github-actions[bot]@users.noreply.github.com"', { stdio: 'inherit' });
+    execSync(`git add ${FEEDS_FILE}`, { stdio: 'inherit' });
+    execSync(`git commit -m "${msg}"`, { stdio: 'inherit' });
+    execSync('git push', { stdio: 'inherit' });
+    return true;
+  } catch (e) {
+    console.error('Git error:', e.message);
+    return false;
+  }
 }
 
 function main() {
-	let checkResult = {}
-	try {
-		checkResult = JSON.parse(readFileSync('check-result.json', 'utf8'))
-	}
-	catch (e) {
-		console.error('Failed to read check-result.json:', e.message)
-		process.exit(1)
-	}
+  let result = {};
+  try {
+    result = JSON.parse(readFileSync('check-result.json', 'utf8'));
+  } catch (e) {
+    console.error('Failed to read check-result.json:', e.message);
+    process.exit(1);
+  }
 
-	const data = checkResult.data
-	if (!data || !data.link) {
-		console.error('No valid data found')
-		process.exit(1)
-	}
+  const data = result.data || {};
+  const action = result.action;
+  const originalLink = result.identity?.originalLink;
 
-	const validArchs = checkResult.archsValid?.validArchs || []
+  if (!data.link && action !== 'remove') {
+    console.error('No link found');
+    process.exit(1);
+  }
 
-	let content
-	try {
-		content = readFileSync(FEEDS_FILE, 'utf8')
-	}
-	catch (e) {
-		console.error('Failed to read feeds file:', e.message)
-		process.exit(1)
-	}
+  let content;
+  try {
+    content = readFileSync(FEEDS_FILE, 'utf8');
+  } catch (e) {
+    console.error('Failed to read feeds file:', e.message);
+    process.exit(1);
+  }
 
-	let result
-	let commitMessage
+  let opResult, commitMsg;
 
-	switch (ACTION) {
-		case 'add':
-			if (!checkResult.allPassed) {
-				setOutput('result', '❌ 检测未通过，无法添加友链')
-				process.exit(0)
-			}
-			result = addEntry(content, data, validArchs)
-			commitMessage = `feat(friend-link): add ${data.author}'s blog\n\nCloses #${data.issueNumber}`
-			break
-		case 'remove':
-			result = removeEntry(content, data.link)
-			commitMessage = `feat(friend-link): remove ${data.author}'s blog\n\nCloses #${data.issueNumber}`
-			break
-		case 'update':
-			result = updateEntry(content, data, validArchs)
-			commitMessage = `feat(friend-link): update ${data.author}'s blog\n\nCloses #${data.issueNumber}`
-			break
-		default:
-			console.log('Unknown action:', ACTION)
-			process.exit(1)
-	}
+  if (action === 'add') {
+    opResult = addEntry(content, { ...data, validArchs: result.archsValid?.validArchs });
+    commitMsg = `feat(friend-link): add ${data.author}'s blog\n\nCloses #${data.issueNumber}`;
+  } else if (action === 'remove') {
+    const linkToRemove = originalLink || data.link;
+    opResult = removeEntry(content, linkToRemove);
+    commitMsg = `feat(friend-link): remove ${data.author || linkToRemove}'s blog\n\nCloses #${data.issueNumber}`;
+  } else if (action === 'update') {
+    opResult = updateEntry(content, { ...data, validArchs: result.archsValid?.validArchs }, originalLink);
+    commitMsg = `feat(friend-link): update ${data.author}'s blog\n\nCloses #${data.issueNumber}`;
+  } else {
+    console.log('Unknown action:', action);
+    process.exit(1);
+  }
 
-	if (!result.success) {
-		setOutput('result', `❌ ${result.message}`)
-		process.exit(0)
-	}
+  if (!opResult.success) {
+    setOutput('result', `❌ ${opResult.message}`);
+    process.exit(0);
+  }
 
-	writeFileSync(FEEDS_FILE, result.content)
-
-	if (gitCommit(commitMessage)) {
-		setOutput('result', `✅ 友链已成功${ACTION === 'add' ? '添加' : ACTION === 'remove' ? '移除' : '更新'}`)
-	}
-	else {
-		setOutput('result', '⚠️ 文件已修改但提交失败，请手动检查')
-	}
+  writeFileSync(FEEDS_FILE, opResult.content);
+  
+  if (gitCommit(commitMsg)) {
+    setOutput('result', `✅ 友链已${action === 'add' ? '添加' : action === 'remove' ? '移除' : '更新'}`);
+  } else {
+    setOutput('result', '⚠️ 文件已修改但提交失败');
+  }
 }
 
-main()
+main();

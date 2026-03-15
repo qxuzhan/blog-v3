@@ -7,27 +7,14 @@ body:
       value: |
         用于更新已有友链的信息（如头像、描述、技术架构等）。
 
-        **注意**：
-        - 博客地址（link）一旦添加则无法修改
-        - 如需更换博客地址，请申请移除后重新添加
+        **注意**：博客地址（link）不可修改
 
   - type: input
     id: originalIssueId
     attributes:
-      label: 原始申请 Issue ID
-      description: |
-        申请友链时的 Issue 编号（如 #123）。
-        用于验证你的身份。
+      label: 原始申请 Issue 编号
+      description: 申请友链时的 Issue 编号（如 123）
       placeholder: 例如：123
-    validations:
-      required: true
-
-  - type: input
-    id: link
-    attributes:
-      label: 博客地址
-      description: 你的博客 URL（用于定位友链，不可修改）
-      placeholder: https://www.qixz.cn/
     validations:
       required: true
 
@@ -35,56 +22,42 @@ body:
     id: author
     attributes:
       label: 博主昵称（可选）
-      description: 新的昵称或笔名
 
   - type: input
     id: title
     attributes:
       label: 博客名称（可选）
-      description: 新的博客大标题
 
-  - type: textarea
+  - type: input
     id: desc
     attributes:
       label: 博客Slogan（可选）
-      description: 新的博客个性宣言
 
   - type: input
     id: avatar
     attributes:
       label: 头像链接（可选）
-      description: 新的头像图片 URL
-
-  - type: input
-    id: feed
-    attributes:
-      label: 订阅源（可选）
-      description: 新的 RSS/Atom 订阅地址
 
   - type: input
     id: sitenick
     attributes:
       label: 网站趣称（可选）
-      description: 新的网站别名或昵称
 
   - type: input
     id: archs
     attributes:
       label: 技术架构（可选）
-      description: |
-        新的技术栈，多个用逗号分隔。仅支持以下选项：
-        服务器、国内 CDN、虚拟主机、Astro、Cloudflare、Deno Deploy、EdgeOne、Esa、GitHub Pages、Golang、Gridea、Halo、Hexo、HTML、Hugo、Jekyll、Mix Space、Netlify、Next.js、NotionNext、Nuxt、PHP、Python、React、Typecho、Vercel、VitePress、Vue、VuePress、WordPress、Zebaur
+      description: 多个用逗号分隔。仅支持：服务器、国内 CDN、虚拟主机、Astro、Cloudflare、Deno Deploy、EdgeOne、Esa、GitHub Pages、Golang、Gridea、Halo、Hexo、HTML、Hugo、Jekyll、Mix Space、Netlify、Next.js、NotionNext、Nuxt、PHP、Python、React、Typecho、Vercel、VitePress、Vue、VuePress、WordPress、Zebaur
 
   - type: textarea
     id: comment
     attributes:
-      label: 备注信息（可选）
-      description: 其他想更新的内容
+      label: 备注（可选）
 
   - type: checkboxes
     id: terms
     attributes:
-      label: 确认事项
+      label: 确认
       options:
         - label: 我确认以上信息真实有效
           required: true

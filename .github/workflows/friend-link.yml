@@ -4,53 +4,47 @@ on:
   issues:
     types: [labeled]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  MY_SITE_URL: 'https://www.qixz.cn/'
+  FEEDS_FILE: 'app/feeds.ts'
+
 permissions:
   issues: write
   contents: write
-  pull-requests: write
-
-env:
-  MY_SITE_URL: 'https://www.qixz.cn/'
-  MY_SITE_NAME: 青序栈
-  FEEDS_FILE: app/feeds.ts
 
 jobs:
-  check-and-process:
+  process-friend-link:
     runs-on: ubuntu-latest
     if: startsWith(github.event.label.name, 'friend-link/')
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: pnpm
+          node-version: '24'
+          cache: 'pnpm'
 
-      - name: Get pnpm store directory
+      - name: Get pnpm store
         id: pnpm-cache
         shell: bash
-        run: |
-          echo "STORE_DIR=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+        run: echo "STORE_DIR=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_DIR }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
-      - name: Parse Issue Content
+      - name: Parse Issue
         id: parse
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
@@ -58,138 +52,131 @@ jobs:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ACTOR: ${{ github.actor }}
           OWNER: ${{ github.repository_owner }}
+          LABEL: ${{ github.event.label.name }}
         run: node scripts/friend-link-parse.mjs
 
-      - name: Run Friend Link Check
+      - name: Run Check
         id: check
-        env:
-          MY_SITE_URL: ${{ env.MY_SITE_URL }}
         run: node scripts/friend-link-check.mjs
 
-      - name: Determine Action
-        id: action
-        run: |
-          label="${{ github.event.label.name }}"
-          action="none"
-
-          if [[ "$label" == "friend-link/add" ]]; then
-            action="add"
-          elif [[ "$label" == "friend-link/remove" ]]; then
-            action="remove"
-          elif [[ "$label" == "friend-link/update" ]]; then
-            action="update"
-          elif [[ "$label" == "friend-link/check" ]]; then
-            action="check"
-          elif [[ "$label" == "friend-link/pending" ]]; then
-            action="pending"
-          elif [[ "$label" == "friend-link/approve" ]]; then
-            action="approve"
-          fi
-
-          echo "action=$action" >> $GITHUB_OUTPUT
-          echo "Action to perform: $action"
-
-      - name: Execute Friend Link Action
-        id: execute
-        if: steps.action.outputs.action != 'none' && steps.action.outputs.action != 'check' && steps.action.outputs.action != 'pending'
+      - name: Process Result
+        id: process
         env:
-          ACTION: ${{ steps.action.outputs.action }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LABEL: ${{ github.event.label.name }}
+        run: |
+          CHECK_RESULT=$(cat check-result.json)
+          ACTION=$(echo "$CHECK_RESULT" | jq -r '.action')
+          ALL_PASSED=$(echo "$CHECK_RESULT" | jq -r '.allPassed')
+          REQUIRES_REVIEW=$(echo "$CHECK_RESULT" | jq -r '.requiresReview')
+          LABEL="$LABEL"
+
+          echo "action=$ACTION" >> $GITHUB_OUTPUT
+          echo "all_passed=$ALL_PASSED" >> $GITHUB_OUTPUT
+          echo "requires_review=$REQUIRES_REVIEW" >> $GITHUB_OUTPUT
+
+      - name: Auto Approve for Owner
+        id: auto_owner
+        env:
+          ACTOR: ${{ github.actor }}
+          OWNER: ${{ github.repository_owner }}
+        if: env.ACTOR == env.OWNER && (steps.process.outputs.all_passed == 'true' || steps.process.outputs.action == 'remove')
+        run: |
+          echo "auto_approved=true" >> $GITHUB_OUTPUT
+
+      - name: Execute Action
+        id: execute
+        if: steps.process.outputs.all_passed == 'true' || steps.auto_owner.outputs.auto_approved == 'true'
+        env:
+          ACTION: ${{ steps.process.outputs.action }}
         run: node scripts/friend-link-action.mjs
 
-      - name: Create Result Comment
+      - name: Create Comment & Update Status
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+            const result = JSON.parse(fs.readFileSync('check-result.json', 'utf8'));
+            const action = '${{ steps.process.outputs.action }}';
+            const allPassed = '${{ steps.process.outputs.all_passed }}' === 'true';
+            const autoApproved = '${{ steps.auto_owner.outputs.auto_approved }}' === 'true';
+            const requiresReview = '${{ steps.process.outputs.requires_review }}' === 'true';
 
-            let checkResult = {};
-            try {
-              checkResult = JSON.parse(fs.readFileSync('check-result.json', 'utf8'));
-            } catch (e) {
-              checkResult = { error: 'Failed to read check result' };
-            }
+            const emoji = (s) => s === 'pass' ? '✅' : s === 'fail' ? '❌' : s === 'warn' ? '⚠️' : '⏭️';
 
-            const action = '${{ steps.action.outputs.action }}';
-            const executeResult = '${{ steps.execute.outputs.result }}' || '';
-
-            const statusEmoji = (status) => {
-              if (status === 'pass') return '✅';
-              if (status === 'fail') return '❌';
-              if (status === 'warn') return '⚠️';
-              return '❓';
-            };
-
-            let body = `## 🔍 友链检测结果\n\n`;
-            body += `| 检测项 | 状态 | 详情 |\n`;
-            body += `|--------|------|------|\n`;
-            body += `| 身份验证 | ${statusEmoji(checkResult.identity?.status)} | ${checkResult.identity?.message || '-'} |\n`;
-            body += `| 站点连通性 | ${statusEmoji(checkResult.siteConnectivity?.status)} | ${checkResult.siteConnectivity?.message || '-'} |\n`;
-            body += `| 友链互链 | ${statusEmoji(checkResult.linkBack?.status)} | ${checkResult.linkBack?.message || '-'} |\n`;
-            body += `| 头像有效性 | ${statusEmoji(checkResult.avatarValid?.status)} | ${checkResult.avatarValid?.message || '-'} |\n`;
-            body += `| 技术架构 | ${statusEmoji(checkResult.archsValid?.status)} | ${checkResult.archsValid?.message || '-'} |\n`;
-
-            if (checkResult.sslValid) {
-              body += `| SSL 证书 | ${statusEmoji(checkResult.sslValid?.status)} | ${checkResult.sslValid?.message || '-'} |\n`;
-            }
-
-            body += `\n### 📋 申请信息摘要\n`;
-            body += `- **博主**：${checkResult.data?.author || '-'}\n`;
-            body += `- **博客**：${checkResult.data?.title || '-'}\n`;
-            body += `- **地址**：${checkResult.data?.link || '-'}\n`;
-            body += `- **友链页面**：${checkResult.data?.linkPage || '-'}\n`;
-            body += `- **原始 Issue**：${checkResult.data?.originalIssueId ? '#' + checkResult.data.originalIssueId : '-'}\n`;
-
-            body += `\n### 🏷️ 操作状态\n`;
-
-            if (action === 'pending') {
-              body += `> ⏳ 待人工审核...\n`;
-              body += `> \n`;
-              body += `> ${checkResult.identity?.message || '需要人工确认身份'}\n`;
-            } else if (action === 'approve') {
-              if (checkResult.allPassed) {
-                body += `> ✅ 审核通过，正在处理...\n`;
-                body += `> \n`;
-                body += `> ${executeResult}\n`;
-              } else {
-                body += `> ❌ 审核未通过，请检查各项检测结果。\n`;
-              }
-            } else if (action === 'check') {
-              body += `> 仅执行检测，未执行任何修改操作。\n`;
-            } else if (action === 'add') {
-              if (checkResult.allPassed) {
-                body += `> ✅ 检测通过，正在添加友链...\n`;
-                body += `> \n`;
-                body += `> ${executeResult}\n`;
-              } else if (checkResult.requiresManualReview) {
-                body += `> ⚠️ 需要人工审核\n`;
-                body += `> \n`;
-                body += `> 原因：${checkResult.linkBack?.status === 'warn' ? '页面可能为动态渲染' : '身份验证未通过'}\n`;
-              } else {
-                body += `> ❌ 检测未通过，请先解决上述问题后再申请。\n`;
-              }
-            } else if (action === 'remove') {
-              if (checkResult.identity?.needsManualReview) {
-                body += `> ⚠️ 需要人工审核确认身份\n`;
-              } else {
-                body += `> 🗑️ 正在移除友链...\n`;
-                body += `> \n`;
-                body += `> ${executeResult}\n`;
-              }
+            let body = `## 🔍 友链处理结果\n\n`;
+            body += `| 检测项 | 状态 | 详情 |\n|--------|------|------|\n`;
+            
+            if (action === 'add') {
+              body += `| 站点连通性 | ${emoji(result.siteConnectivity?.status)} | ${result.siteConnectivity?.message || '-'} |\n`;
+              body += `| 友链互链 | ${emoji(result.linkBack?.status)} | ${result.linkBack?.message || '-'} |\n`;
+              body += `| 头像有效性 | ${emoji(result.avatarValid?.status)} | ${result.avatarValid?.message || '-'} |\n`;
+              body += `| 技术架构 | ${emoji(result.archsValid?.status)} | ${result.archsValid?.message || '-'} |\n`;
             } else if (action === 'update') {
-              if (checkResult.identity?.needsManualReview) {
-                body += `> ⚠️ 需要人工审核确认身份\n`;
-              } else if (checkResult.allPassed) {
-                body += `> 🔄 正在更新友链信息...\n`;
-                body += `> \n`;
-                body += `> ${executeResult}\n`;
-              } else {
-                body += `> ❌ 检测未通过，请检查各项检测结果。\n`;
-              }
+              body += `| 身份验证 | ${emoji(result.identity?.status)} | ${result.identity?.message || '-'} |\n`;
+              body += `| 站点连通性 | ${emoji(result.siteConnectivity?.status)} | ${result.siteConnectivity?.message || '-'} |\n`;
+              body += `| 头像有效性 | ${emoji(result.avatarValid?.status)} | ${result.avatarValid?.message || '-'} |\n`;
+              body += `| 技术架构 | ${emoji(result.archsValid?.status)} | ${result.archsValid?.message || '-'} |\n`;
+            } else if (action === 'remove') {
+              body += `| 身份验证 | ${emoji(result.identity?.status)} | ${result.identity?.message || '-'} |\n`;
             }
 
-            body += `\n---\n`;
-            body += `*此评论由 GitHub Actions 自动生成*`;
+            body += `\n`;
+
+            if (allPassed || autoApproved) {
+              body += `> ✅ 处理完成，友链已${action === 'add' ? '添加' : action === 'update' ? '更新' : '移除'}\n`;
+              
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                state: 'closed',
+                state_reason: 'completed'
+              });
+
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: 'friend-link/add'
+              });
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: 'friend-link/update'
+              });
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: 'friend-link/remove'
+              });
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['friend-link/passed']
+              });
+            } else if (requiresReview) {
+              body += `> ⚠️ 需要人工审核\n`;
+              body += `> \n`;
+              body += `> 请仓库所有者确认后：\n`;
+              body += `> - 打上 \`friend-link/passed\` 标签以通过\n`;
+              body += `> - 打上 \`friend-link/rejected\` 标签以拒绝\n`;
+            } else {
+              body += `> ❌ 检测未通过\n`;
+              
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                state: 'closed',
+                state_reason: 'not_planned'
+              });
+            }
+
+            body += `\n---\n*由 GitHub Actions 自动生成*`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -198,59 +185,54 @@ jobs:
               body: body
             });
 
-      - name: Update Labels Based on Result
-        if: always()
+      - name: Handle Rejection
+        if: github.event.label.name == 'friend-link/rejected'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              state_reason: 'not_planned'
+            });
+
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'friend-link/rejected'
+            });
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '> ❌ 友链申请已被拒绝\n\n---\n*由 GitHub Actions 自动生成*'
+            });
+
+      - name: Handle Passed Label Removed (Revoke)
+        if: github.event.action == 'unlabeled' && github.event.label.name == 'friend-link/passed'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+            const result = JSON.parse(fs.readFileSync('check-result.json', 'utf8'));
 
-            const checkResult = fs.existsSync('check-result.json')
-              ? JSON.parse(fs.readFileSync('check-result.json', 'utf8'))
-              : {};
+            const issue = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
 
-            const action = '${{ steps.action.outputs.action }}';
-            const labelsToAdd = [];
-            const labelsToRemove = [];
-
-            if (action === 'add' || action === 'update' || action === 'remove') {
-              if (checkResult.requiresManualReview || checkResult.identity?.needsManualReview) {
-                labelsToAdd.push('friend-link/pending');
-                labelsToRemove.push('friend-link/add', 'friend-link/update', 'friend-link/remove');
-              } else if (checkResult.allPassed) {
-                labelsToAdd.push('friend-link/passed');
-                labelsToRemove.push('friend-link/failed', 'friend-link/pending');
-              } else {
-                labelsToAdd.push('friend-link/failed');
-                labelsToRemove.push('friend-link/passed');
-              }
-            }
-
-            if (action === 'approve') {
-              labelsToRemove.push('friend-link/pending');
-              labelsToAdd.push('friend-link/passed');
-            }
-
-            if (labelsToRemove.length > 0) {
-              try {
-                for (const label of labelsToRemove) {
-                  try {
-                    await github.rest.issues.removeLabel({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      issue_number: context.issue.number,
-                      name: label
-                    });
-                  } catch (e) {}
-                }
-              } catch (e) {}
-            }
-
-            if (labelsToAdd.length > 0) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                labels: labelsToAdd
+            const isAdd = issue.labels.some(l => l.name === 'friend-link/add');
+            
+            if (isAdd && result.data?.link) {
+              const action = 'remove';
+              const { execSync } = require('child_process');
+              
+              execSync(`node scripts/friend-link-action.mjs`, {
+                env: { ...process.env, ACTION: action }
               });
             }
